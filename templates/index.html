@@ -1,101 +1,79 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8">
-  <title>Truck Route Planner</title>
-  <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@400;600;800&display=swap" rel="stylesheet">
-  <style>
-    body {
-      font-family: 'Montserrat', sans-serif;
-      background-color: #f4f7fb;
-      margin: 0;
-      padding: 0;
-    }
-
-    header {
-      background-color: #003366;
-      padding: 20px;
-      position: relative;
-      color: white;
-      text-align: center;
-    }
-
-    .logo {
-      position: absolute;
-      top: 15px;
-      right: 30px;
-      height: 50px;
-    }
-
-    h1 {
-      font-weight: 800;
-      font-size: 28px;
-      margin: 0;
-    }
-
-    .form-wrapper {
-      display: flex;
-      justify-content: center;
-      margin-top: 50px;
-    }
-
-    .form-container {
-      background: white;
-      padding: 30px;
-      border-radius: 10px;
-      box-shadow: 0 0 15px rgba(0,0,0,0.1);
-      width: 350px;
-    }
-
-    label {
-      display: block;
-      margin: 15px 0 5px;
-      font-weight: bold;
-    }
-
-    input {
-      width: 100%;
-      padding: 10px;
-      border: 2px solid #ccc;
-      border-radius: 5px;
-      font-size: 16px;
-    }
-
-    button {
-      margin-top: 20px;
-      width: 100%;
-      padding: 10px;
-      background-color: #003366;
-      color: white;
-      border: none;
-      border-radius: 5px;
-      font-size: 16px;
-      cursor: pointer;
-    }
-
-    button:hover {
-      background-color: #005599;
-    }
-  </style>
+    <meta charset="UTF-8">
+    <title>Truck Route Planner</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            background-color: #f7f9fc;
+            text-align: center;
+            margin: 0;
+            padding: 0;
+        }
+        header {
+            background-color: #003865;
+            padding: 10px 20px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            color: white;
+        }
+        header img {
+            height: 40px;
+        }
+        .container {
+            margin-top: 100px;
+        }
+        form {
+            background: white;
+            padding: 30px;
+            border-radius: 10px;
+            width: 350px;
+            margin: 0 auto;
+            box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+        }
+        h1 {
+            color: #003865;
+            margin-bottom: 20px;
+        }
+        input[type="text"] {
+            width: 100%;
+            padding: 10px;
+            margin: 10px 0;
+            border: 1px solid #ccc;
+            border-radius: 5px;
+        }
+        input[type="submit"] {
+            background-color: #003865;
+            color: white;
+            padding: 10px 20px;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            width: 100%;
+        }
+        input[type="submit"]:hover {
+            background-color: #002a52;
+        }
+    </style>
 </head>
 <body>
-  <header>
-    <h1>Truck Route Planner</h1>
-    <img src="{{ url_for('static', filename='logo.png') }}" class="logo" alt="Echo Logo">
-  </header>
+    <header>
+        <h2>Echo Global Logistics</h2>
+        <img src="/static/logo.png" alt="Echo Logo">
+    </header>
+    <div class="container">
+        <form action="/result" method="post">
+            <h1>Truck Route Planner</h1>
+            <label for="start"><strong>Enter starting city and state:</strong></label><br>
+            <input type="text" id="start" name="start" required><br>
 
-  <div class="form-wrapper">
-    <div class="form-container">
-      <form method="POST" action="/result">
-        <label for="start">Enter starting city and state:</label>
-        <input type="text" id="start" name="start" required>
+            <label for="end"><strong>Enter destination city and state:</strong></label><br>
+            <input type="text" id="end" name="end" required><br>
 
-        <label for="end">Enter destination city and state:</label>
-        <input type="text" id="end" name="end" required>
-
-        <button type="submit">Map Route</button>
-      </form>
+            <input type="submit" value="Map Route">
+        </form>
     </div>
-  </div>
 </body>
 </html>
