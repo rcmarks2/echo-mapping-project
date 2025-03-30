@@ -1,24 +1,25 @@
 from flask import Flask, render_template, request
-from openrouteservice import Client, convert
+from openrouteservice import Client
 from geopy.geocoders import Nominatim
 import folium
 import pandas as pd
 import os
-import math
 
 app = Flask(__name__)
 geolocator = Nominatim(user_agent="route_mapper")
 client = Client(key=os.environ.get("ORS_API_KEY"))
 
-# Load and combine all EV charger files
+# Load EV charging station data (1.xlsx to 7.xlsx must be in project root)
 file_paths = [f"{i}.xlsx" for i in range(1, 8)]
 combined = pd.concat([pd.read_excel(f) for f in file_paths])
 ev_coords = list(zip(combined['Latitude'], combined['Longitude']))
 
+# Geocode helper
 def geocode_location(location):
     loc = geolocator.geocode(location)
     return (loc.latitude, loc.longitude), loc
 
+# Adds a city marker and offset label
 def create_marker(map_obj, coord, label, color='gold'):
     folium.CircleMarker(
         location=coord,
@@ -28,14 +29,16 @@ def create_marker(map_obj, coord, label, color='gold'):
         fill_opacity=1
     ).add_to(map_obj)
     folium.map.Marker(
-        location=[coord[0] + 1, coord[1]],  # offset for label
+        location=[coord[0] + 1, coord[1]],
         icon=folium.DivIcon(html=f"<div style='font-weight:bold;color:black'>{label}</div>")
     ).add_to(map_obj)
 
+# Haversine calculator
 def calculate_distance(a, b):
     from geopy.distance import geodesic
     return geodesic(a, b).miles
 
+# EV logic: find charger every 225 miles
 def build_ev_route(start, end, max_distance=225):
     route = [start]
     current = start
@@ -52,7 +55,7 @@ def build_ev_route(start, end, max_distance=225):
                 found = True
                 break
         if not found:
-            return None  # Not feasible
+            return None
     route.append(end)
     return route
 
@@ -65,14 +68,14 @@ def result():
     start_loc = request.form["start"]
     end_loc = request.form["end"]
 
-    # Geocode both locations
+    # Geocode locations
     start_coord, start_raw = geocode_location(start_loc)
     end_coord, end_raw = geocode_location(end_loc)
 
     start_label = f"{start_raw.address.split(',')[0]}, {start_raw.raw['address'].get('state', '')[:2]}"
     end_label = f"{end_raw.address.split(',')[0]}, {end_raw.raw['address'].get('state', '')[:2]}"
 
-    # Generate diesel route
+    # Diesel Route
     coords = (start_coord[::-1], end_coord[::-1])
     diesel_route = client.directions(coords, profile='driving-hgv', format='geojson')
     diesel_distance = round(diesel_route['features'][0]['properties']['segments'][0]['distance'] * 0.000621371, 1)
@@ -88,7 +91,7 @@ def result():
         icon=folium.DivIcon(html=f"<div style='font-weight:bold;color:black;text-align:center'>{diesel_distance} mi<br>Diesel Route</div>")
     ).add_to(diesel_map)
 
-    # Generate EV route
+    # EV Route
     ev_map = folium.Map(location=start_coord, zoom_start=5, tiles="CartoDB positron")
     create_marker(ev_map, start_coord, start_label)
     create_marker(ev_map, end_coord, end_label)
@@ -128,19 +131,19 @@ def result():
             location=[mid_lat - 2, mid_lon],
             icon=folium.DivIcon(html=f"<div style='font-weight:bold;color:black;text-align:center'>{ev_distance_miles} mi<br>EV Route</div>")
         ).add_to(ev_map)
-
     else:
         folium.map.Marker(
             location=[(start_coord[0] + end_coord[0]) / 2, (start_coord[1] + end_coord[1]) / 2],
             icon=folium.DivIcon(html="<div style='font-weight:bold;color:red;font-size:18px;'>EV Truck<br>Not Feasible</div>")
         ).add_to(ev_map)
 
-    # Save both maps
+    # Save map files
     diesel_map.save("static/diesel_map.html")
     ev_map.save("static/ev_map.html")
 
     return render_template("result.html")
 
+# 👇 Important for Render deployment
 if __name__ == "__main__":
     port = int(os.environ.get("PORT", 5000))
     app.run(host="0.0.0.0", port=port)
