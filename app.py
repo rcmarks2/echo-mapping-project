@@ -16,7 +16,7 @@ file_paths = [f"{i}.xlsx" for i in range(1, 8)]
 combined = pd.concat([pd.read_excel(f) for f in file_paths])
 ev_coords = list(zip(combined['Latitude'], combined['Longitude']))
 
-# Geocoding with retry logic
+# Retry-safe geocoder
 def geocode_location(location, max_retries=3):
     for attempt in range(max_retries):
         try:
@@ -30,7 +30,7 @@ def geocode_location(location, max_retries=3):
             else:
                 raise ValueError(f"Geocoding failed after {max_retries} attempts for: {location}")
 
-# Add labeled marker
+# Adds labeled city marker
 def create_marker(map_obj, coord, label, color='gold'):
     folium.CircleMarker(
         location=coord,
@@ -44,12 +44,12 @@ def create_marker(map_obj, coord, label, color='gold'):
         icon=folium.DivIcon(html=f"<div style='font-weight:bold;color:black'>{label}</div>")
     ).add_to(map_obj)
 
-# Calculate distance
+# Calculate miles between points
 def calculate_distance(a, b):
     from geopy.distance import geodesic
     return geodesic(a, b).miles
 
-# Build EV route
+# Build EV route with charging stops
 def build_ev_route(start, end, max_distance=225):
     route = [start]
     current = start
@@ -83,8 +83,11 @@ def result():
         start_coord, start_raw = geocode_location(start_loc)
         end_coord, end_raw = geocode_location(end_loc)
 
-        start_label = f"{start_raw.address.split(',')[0]}, {start_raw.raw['address'].get('state', '')[:2]}"
-        end_label = f"{end_raw.address.split(',')[0]}, {end_raw.raw['address'].get('state', '')[:2]}"
+        # Safe access to state abbreviation
+        start_state = start_raw.raw.get('address', {}).get('state', '')[:2]
+        end_state = end_raw.raw.get('address', {}).get('state', '')[:2]
+        start_label = f"{start_raw.address.split(',')[0]}, {start_state}"
+        end_label = f"{end_raw.address.split(',')[0]}, {end_state}"
 
         # Diesel route
         coords = (start_coord[::-1], end_coord[::-1])
@@ -154,7 +157,7 @@ def result():
     except Exception as e:
         return f"<h1>Route Error</h1><p>{e}</p>", 500
 
-# Required for local and Render hosting
+# Run locally or on Render
 if __name__ == "__main__":
     port = int(os.environ.get("PORT", 5000))
     app.run(host="0.0.0.0", port=port)
