@@ -16,23 +16,23 @@ file_paths = [f"{i}.xlsx" for i in range(1, 8)]
 combined = pd.concat([pd.read_excel(f) for f in file_paths])
 ev_coords = list(zip(combined['Latitude'], combined['Longitude']))
 
-# Geocode with retry
+# Retry-safe geocoder
 def geocode_location(location, retries=3):
     for _ in range(retries):
         try:
-            loc = geolocator.geocode(location, timeout=5)
+            loc = geolocator.geocode(location, timeout=10)
             if loc:
                 return (loc.latitude, loc.longitude), loc
         except GeocoderTimedOut:
             time.sleep(1)
     raise ValueError(f"Could not geocode location: {location}")
 
-# Distance between two lat/lon points
+# Calculate distance in miles
 def calculate_distance(a, b):
     from geopy.distance import geodesic
     return geodesic(a, b).miles
 
-# Create map marker with optional label
+# Create labeled marker
 def create_marker(map_obj, coord, label, color='gold'):
     folium.CircleMarker(
         location=coord,
@@ -46,7 +46,7 @@ def create_marker(map_obj, coord, label, color='gold'):
         icon=folium.DivIcon(html=f"<div style='font-weight:bold;color:black'>{label}</div>")
     ).add_to(map_obj)
 
-# Choose EV charging stations along the route, max 225 miles apart
+# Select EV stations that keep hops ≤ 225 miles
 def build_ev_route(start, end, max_distance=225):
     route = [start]
     current = start
@@ -67,6 +67,13 @@ def build_ev_route(start, end, max_distance=225):
     route.append(end)
     return route
 
+# Format city, state labels
+def format_label(raw):
+    address = raw.raw.get("address", {})
+    city = address.get("city") or address.get("town") or address.get("village") or raw.address.split(",")[0]
+    state = address.get("state", "")[:2]
+    return f"{city}, {state}" if state else city
+
 @app.route("/")
 def index():
     return render_template("index.html")
@@ -80,20 +87,15 @@ def result():
         start_coord, start_raw = geocode_location(start_input)
         end_coord, end_raw = geocode_location(end_input)
 
-        def format_label(raw):
-            city = raw.address.split(',')[0]
-            state = raw.raw.get('address', {}).get('state', '')[:2]
-            return f"{city}, {state}" if state else city
-
         start_label = format_label(start_raw)
         end_label = format_label(end_raw)
 
         mid_lat = (start_coord[0] + end_coord[0]) / 2
         mid_lon = (start_coord[1] + end_coord[1]) / 2
 
-        # Diesel Route Map
+        # Diesel Route
         diesel_map = folium.Map(location=start_coord, zoom_start=5, tiles="CartoDB positron")
-        diesel_coords = (start_coord[::-1], end_coord[::-1])
+        diesel_coords = [start_coord[::-1], end_coord[::-1]]
         diesel_route = client.directions(diesel_coords, profile='driving-hgv', format='geojson')
         diesel_distance = round(diesel_route['features'][0]['properties']['segments'][0]['distance'] * 0.000621371, 1)
 
@@ -105,12 +107,12 @@ def result():
             icon=folium.DivIcon(html=f"<div style='font-weight:bold;color:black;text-align:center'>{diesel_distance} mi<br>Diesel Route</div>")
         ).add_to(diesel_map)
 
-        # EV Route Map
+        # EV Route
         ev_map = folium.Map(location=start_coord, zoom_start=5, tiles="CartoDB positron")
         create_marker(ev_map, start_coord, start_label)
         create_marker(ev_map, end_coord, end_label)
 
-        # Show all EV stations in blue-grey by default
+        # All EV stations in gray
         for lat, lon in ev_coords:
             folium.CircleMarker(
                 location=(lat, lon),
@@ -124,14 +126,11 @@ def result():
 
         if ev_path:
             used_stations = ev_path[1:-1]
-            total_distance = 0
-
-            # Build full route with used EV stations as required waypoints
             waypoint_coords = [coord[::-1] for coord in ev_path]  # to (lon, lat)
+
             ev_route = client.directions(waypoint_coords, profile='driving-hgv', format='geojson')
             folium.GeoJson(ev_route, style_function=lambda x: {'color': 'gold', 'weight': 5}).add_to(ev_map)
 
-            # Add 1 mile per EV station
             for station in used_stations:
                 folium.CircleMarker(
                     location=station,
@@ -141,8 +140,8 @@ def result():
                     fill_opacity=1
                 ).add_to(ev_map)
 
-            segments = ev_route['features'][0]['properties']['segments']
-            ev_distance_miles = round(sum(s['distance'] for s in segments) * 0.000621371 + len(used_stations), 1)
+            total_meters = sum(s['distance'] for s in ev_route['features'][0]['properties']['segments'])
+            ev_distance_miles = round(total_meters * 0.000621371 + len(used_stations), 1)
 
             folium.Marker(
                 location=[mid_lat - 2, mid_lon],
@@ -156,7 +155,6 @@ def result():
 
         diesel_map.save("static/diesel_map.html")
         ev_map.save("static/ev_map.html")
-
         return render_template("result.html")
 
     except Exception as e:
