@@ -1,0 +1,76 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Route Result</title>
+    <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@400;600;800&display=swap" rel="stylesheet">
+    <style>
+        body {
+            font-family: 'Montserrat', sans-serif;
+            background-color: #f4f7fb;
+            margin: 0;
+            padding: 0;
+        }
+
+        header {
+            background-color: #003366;
+            padding: 20px;
+            position: relative;
+            color: white;
+        }
+
+        .logo {
+            position: absolute;
+            top: 15px;
+            right: 30px;
+            height: 50px;
+        }
+
+        h1 {
+            font-weight: 800;
+            font-size: 28px;
+            margin: 0;
+        }
+
+        .map-container {
+            width: 95%;
+            height: 600px;
+            margin: 30px auto;
+            border-radius: 8px;
+            overflow: hidden;
+            box-shadow: 0 0 12px rgba(0,0,0,0.15);
+        }
+
+        iframe {
+            width: 100%;
+            height: 100%;
+            border: none;
+        }
+
+        .back-link {
+            display: block;
+            text-align: center;
+            margin-top: 20px;
+            font-weight: bold;
+            color: #003366;
+            text-decoration: none;
+        }
+
+        .back-link:hover {
+            text-decoration: underline;
+        }
+    </style>
+</head>
+<body>
+    <header>
+        <h1>EV vs Diesel Route Map</h1>
+        <img src="{{ url_for('static', filename='logo.png') }}" class="logo" alt="Echo Logo">
+    </header>
+
+    <div class="map-container">
+        <iframe src="{{ url_for('static', filename='map.html') }}"></iframe>
+    </div>
+
+    <a href="/" class="back-link">← Back to Route Entry</a>
+</body>
+</html>
