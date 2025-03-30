@@ -13,10 +13,14 @@ client = Client(key=os.environ.get("ORS_API_KEY"))
 
 # Load EV charger locations
 file_paths = [f"{i}.xlsx" for i in range(1, 8)]
-combined = pd.concat([pd.read_excel(f) for f in file_paths])
-ev_coords = list(zip(combined['Latitude'], combined['Longitude']))
+try:
+    combined = pd.concat([pd.read_excel(f) for f in file_paths])
+    ev_coords = list(zip(combined['Latitude'], combined['Longitude']))
+except Exception as e:
+    print("EV file load error:", e)
+    ev_coords = []
 
-# Retry geocoder in case of timeout
+# Retry geocoder
 def geocode_location(location, retries=3):
     for _ in range(retries):
         try:
@@ -27,18 +31,21 @@ def geocode_location(location, retries=3):
             time.sleep(1)
     raise ValueError(f"Could not geocode location: {location}")
 
-# Distance calculator
+# Calculate distance
 def calculate_distance(a, b):
     from geopy.distance import geodesic
     return geodesic(a, b).miles
 
-# Format label
+# Label formatter
 def format_label(raw):
-    city = raw.address.split(',')[0]
-    state = raw.raw.get('address', {}).get('state', '')[:2].upper()
-    return f"{city}, {state}" if state else city
+    try:
+        city = raw.address.split(',')[0]
+        state = raw.raw.get('address', {}).get('state', '')[:2].upper()
+        return f"{city}, {state}" if state else city
+    except:
+        return raw.address
 
-# Create markers
+# Marker creator
 def create_marker(map_obj, coord, label, color='gold'):
     folium.CircleMarker(
         location=coord,
@@ -52,7 +59,7 @@ def create_marker(map_obj, coord, label, color='gold'):
         icon=folium.DivIcon(html=f"<div style='font-weight:bold;color:black'>{label}</div>")
     ).add_to(map_obj)
 
-# Build EV route with max 225 mi hops
+# EV path builder
 def build_ev_route(start, end, max_distance=225):
     route = [start]
     current = start
@@ -80,8 +87,11 @@ def index():
 @app.route("/result", methods=["POST"])
 def result():
     try:
-        start_input = request.form["start"]
-        end_input = request.form["end"]
+        start_input = request.form.get("start")
+        end_input = request.form.get("end")
+
+        if not start_input or not end_input:
+            return "<h1>Route Error</h1><p>Missing input location.</p>"
 
         start_coord, start_raw = geocode_location(start_input)
         end_coord, end_raw = geocode_location(end_input)
@@ -124,12 +134,11 @@ def result():
         ev_path = build_ev_route(start_coord, end_coord)
         if ev_path:
             used_stations = ev_path[1:-1]
-            waypoints = [coord[::-1] for coord in ev_path]  # reverse to (lon, lat)
+            waypoints = [coord[::-1] for coord in ev_path]
 
             ev_route = client.directions(waypoints, profile='driving-hgv', format='geojson')
             folium.GeoJson(ev_route, style_function=lambda x: {'color': 'gold', 'weight': 5}).add_to(ev_map)
 
-            # Color used EV stations red
             for station in used_stations:
                 folium.CircleMarker(
                     location=station,
@@ -152,7 +161,7 @@ def result():
                 icon=folium.DivIcon(html="<div style='font-weight:bold;color:red;font-size:18px;'>EV Truck<br>Not Feasible</div>")
             ).add_to(ev_map)
 
-        # Save both maps
+        # Save maps
         diesel_map.save("static/diesel_map.html")
         ev_map.save("static/ev_map.html")
 
@@ -161,7 +170,6 @@ def result():
     except Exception as e:
         return f"<h1>Route Error</h1><p>{e}</p>", 500
 
-# Run locally or on Render
 if __name__ == "__main__":
     port = int(os.environ.get("PORT", 5000))
     app.run(host="0.0.0.0", port=port, debug=True)
