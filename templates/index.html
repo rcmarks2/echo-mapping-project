@@ -2,78 +2,94 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <title>Truck Route Planner</title>
+    <title>Echo Route Comparison</title>
+    <link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Open+Sans:400,700">
     <style>
         body {
-            font-family: Arial, sans-serif;
-            background-color: #f7f9fc;
-            text-align: center;
+            font-family: 'Open Sans', sans-serif;
+            background-color: #f4f6f8;
             margin: 0;
             padding: 0;
         }
+
         header {
-            background-color: #003865;
-            padding: 10px 20px;
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
+            background-color: #002f5f;
             color: white;
+            padding: 20px;
+            position: relative;
         }
+
+        header h1 {
+            margin: 0;
+            font-size: 26px;
+        }
+
         header img {
+            position: absolute;
+            top: 15px;
+            right: 20px;
             height: 40px;
         }
+
         .container {
-            margin-top: 100px;
+            text-align: center;
+            margin-top: 60px;
         }
+
         form {
+            display: inline-block;
             background: white;
-            padding: 30px;
-            border-radius: 10px;
-            width: 350px;
-            margin: 0 auto;
-            box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+            padding: 40px;
+            border-radius: 8px;
+            box-shadow: 0 4px 8px rgba(0,0,0,0.1);
         }
-        h1 {
-            color: #003865;
-            margin-bottom: 20px;
-        }
+
         input[type="text"] {
-            width: 100%;
-            padding: 10px;
-            margin: 10px 0;
+            padding: 12px;
+            margin: 10px;
+            width: 280px;
             border: 1px solid #ccc;
             border-radius: 5px;
         }
+
         input[type="submit"] {
-            background-color: #003865;
+            padding: 12px 25px;
+            background-color: #0070c0;
             color: white;
-            padding: 10px 20px;
             border: none;
             border-radius: 5px;
+            font-weight: bold;
             cursor: pointer;
-            width: 100%;
         }
+
         input[type="submit"]:hover {
-            background-color: #002a52;
+            background-color: #005a9e;
+        }
+
+        .description {
+            color: #333;
+            font-size: 18px;
+            margin-top: 30px;
         }
     </style>
 </head>
 <body>
     <header>
-        <h2>Echo Global Logistics</h2>
-        <img src="/static/logo.png" alt="Echo Logo">
+        <h1>Echo Global Route Mapping Tool</h1>
+        <img src="{{ url_for('static', filename='logo.png') }}" alt="Echo Logo">
     </header>
+    
     <div class="container">
         <form action="/result" method="post">
-            <h1>Truck Route Planner</h1>
-            <label for="start"><strong>Enter starting city and state:</strong></label><br>
-            <input type="text" id="start" name="start" required><br>
-
-            <label for="end"><strong>Enter destination city and state:</strong></label><br>
-            <input type="text" id="end" name="end" required><br>
-
-            <input type="submit" value="Map Route">
+            <h2>Compare Diesel vs EV Semi-Truck Routes</h2>
+            <input type="text" name="start" placeholder="Enter starting city, state" required><br>
+            <input type="text" name="end" placeholder="Enter destination city, state" required><br>
+            <input type="submit" value="Generate Routes">
         </form>
+
+        <div class="description">
+            <p>This tool compares traditional diesel routes with EV truck routes that must recharge every 225 miles.</p>
+        </div>
     </div>
 </body>
 </html>

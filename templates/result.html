@@ -3,71 +3,110 @@
 <head>
     <meta charset="UTF-8">
     <title>Route Results</title>
+    <link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Open+Sans:400,700">
     <style>
         body {
-            font-family: Arial, sans-serif;
-            background-color: #f7f9fc;
-            text-align: center;
+            font-family: 'Open Sans', sans-serif;
+            background-color: #f4f6f8;
             margin: 0;
             padding: 0;
         }
+
         header {
-            background-color: #003865;
-            padding: 10px 20px;
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
+            background-color: #002f5f;
             color: white;
+            padding: 20px;
+            position: relative;
         }
+
+        header h1 {
+            margin: 0;
+            font-size: 26px;
+        }
+
         header img {
+            position: absolute;
+            top: 15px;
+            right: 20px;
             height: 40px;
         }
-        h1 {
-            margin: 20px;
-            color: #003865;
-        }
-        .map-container {
+
+        .container {
             display: flex;
-            justify-content: center;
-            gap: 30px;
-            padding: 20px;
+            justify-content: space-around;
+            flex-wrap: wrap;
+            padding: 30px;
         }
+
         .map-box {
-            border: 3px solid #003865;
+            background: white;
+            border: 4px solid #002f5f;
             border-radius: 10px;
-            padding: 10px;
-            background-color: white;
+            box-shadow: 0 4px 10px rgba(0, 0, 0, 0.1);
+            margin: 15px;
             width: 45%;
+            min-width: 350px;
         }
-        .map-box h2 {
-            color: #003865;
-            margin-bottom: 10px;
+
+        .map-header {
+            background-color: #0070c0;
+            color: white;
+            text-align: center;
+            padding: 10px;
+            font-weight: bold;
+            font-size: 18px;
+            border-top-left-radius: 5px;
+            border-top-right-radius: 5px;
         }
-        a {
+
+        iframe {
+            width: 100%;
+            height: 600px;
+            border: none;
+            border-bottom-left-radius: 5px;
+            border-bottom-right-radius: 5px;
+        }
+
+        .back-button {
             display: block;
-            margin-top: 20px;
-            color: #003865;
+            text-align: center;
+            margin: 30px;
+        }
+
+        .back-button a {
+            padding: 12px 25px;
+            background-color: #0070c0;
+            color: white;
+            border-radius: 5px;
             text-decoration: none;
             font-weight: bold;
+        }
+
+        .back-button a:hover {
+            background-color: #005a9e;
         }
     </style>
 </head>
 <body>
     <header>
-        <h2>Echo Global Logistics</h2>
-        <img src="/static/logo.png" alt="Echo Logo">
+        <h1>Route Comparison Results</h1>
+        <img src="{{ url_for('static', filename='logo.png') }}" alt="Echo Logo">
     </header>
-    <h1>Route Comparison</h1>
-    <div class="map-container">
+
+    <div class="container">
         <div class="map-box">
-            <h2>Diesel Route</h2>
-            <iframe src="/static/diesel_map.html" width="100%" height="500"></iframe>
+            <div class="map-header">Diesel Route</div>
+            <iframe src="{{ url_for('static', filename='diesel_map.html') }}"></iframe>
         </div>
+
         <div class="map-box">
-            <h2>EV Route</h2>
-            <iframe src="/static/ev_map.html" width="100%" height="500"></iframe>
+            <div class="map-header">EV Route</div>
+            <iframe src="{{ url_for('static', filename='ev_map.html') }}"></iframe>
         </div>
     </div>
-    <a href="/">← Back to Route Entry</a>
+
+    <div class="back-button">
+        <a href="/">Compare Another Route</a>
+    </div>
 </body>
 </html>
