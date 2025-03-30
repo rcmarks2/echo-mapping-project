@@ -16,6 +16,14 @@ file_paths = [f"{i}.xlsx" for i in range(1, 8)]
 combined = pd.concat([pd.read_excel(f) for f in file_paths])
 ev_coords = list(zip(combined['Latitude'], combined['Longitude']))
 
+# Convert coordinates to address string
+def reverse_geocode(lat, lon):
+    try:
+        location = geolocator.reverse((lat, lon), timeout=5)
+        return location.address if location else None
+    except Exception:
+        return None
+
 # Retry-safe geocoder
 def geocode_location(location, max_retries=3):
     for attempt in range(max_retries):
@@ -30,7 +38,7 @@ def geocode_location(location, max_retries=3):
             else:
                 raise ValueError(f"Geocoding failed after {max_retries} attempts for: {location}")
 
-# Adds labeled city marker
+# Adds labeled marker
 def create_marker(map_obj, coord, label, color='gold'):
     folium.CircleMarker(
         location=coord,
@@ -49,20 +57,20 @@ def calculate_distance(a, b):
     from geopy.distance import geodesic
     return geodesic(a, b).miles
 
-# Build EV route with charging stops
-def build_ev_route(start, end, max_distance=225):
+# Build EV route with semi-truck routing through charger addresses
+def build_ev_route_with_addresses(start, end, max_distance=225):
     route = [start]
     current = start
 
     while calculate_distance(current, end) > max_distance:
         candidates = sorted(ev_coords, key=lambda x: calculate_distance(current, x))
         found = False
-        for station in candidates:
-            if station in route or calculate_distance(current, station) > max_distance:
+        for lat, lon in candidates:
+            if (lat, lon) in route or calculate_distance(current, (lat, lon)) > max_distance:
                 continue
-            if calculate_distance(station, end) < calculate_distance(current, end):
-                route.append(station)
-                current = station
+            if calculate_distance((lat, lon), end) < calculate_distance(current, end):
+                route.append((lat, lon))
+                current = (lat, lon)
                 found = True
                 break
         if not found:
@@ -83,13 +91,12 @@ def result():
         start_coord, start_raw = geocode_location(start_loc)
         end_coord, end_raw = geocode_location(end_loc)
 
-        # Safe access to state abbreviation
         start_state = start_raw.raw.get('address', {}).get('state', '')[:2]
         end_state = end_raw.raw.get('address', {}).get('state', '')[:2]
         start_label = f"{start_raw.address.split(',')[0]}, {start_state}"
         end_label = f"{end_raw.address.split(',')[0]}, {end_state}"
 
-        # Diesel route
+        # Diesel Route
         coords = (start_coord[::-1], end_coord[::-1])
         diesel_route = client.directions(coords, profile='driving-hgv', format='geojson')
         diesel_distance = round(diesel_route['features'][0]['properties']['segments'][0]['distance'] * 0.000621371, 1)
@@ -105,7 +112,7 @@ def result():
             icon=folium.DivIcon(html=f"<div style='font-weight:bold;color:black;text-align:center'>{diesel_distance} mi<br>Diesel Route</div>")
         ).add_to(diesel_map)
 
-        # EV route
+        # EV Map
         ev_map = folium.Map(location=start_coord, zoom_start=5, tiles="CartoDB positron")
         create_marker(ev_map, start_coord, start_label)
         create_marker(ev_map, end_coord, end_label)
@@ -119,12 +126,19 @@ def result():
                 fill_opacity=0.8
             ).add_to(ev_map)
 
-        ev_path = build_ev_route(start_coord, end_coord)
+        ev_path = build_ev_route_with_addresses(start_coord, end_coord)
 
         if ev_path:
             used_ev_stations = ev_path[1:-1]
-            ev_coords_reversed = [(c[1], c[0]) for c in ev_path]
-            ev_route = client.directions(ev_coords_reversed, profile='driving-car', format='geojson')
+            ev_addresses = [reverse_geocode(lat, lon) for lat, lon in ev_path]
+            valid_ev_addresses = [addr for addr in ev_addresses if addr]
+
+            if len(valid_ev_addresses) < len(ev_addresses):
+                return "<h1>Route Error</h1><p>One or more EV stations could not be resolved to addresses.</p>", 500
+
+            # Route using EV charger addresses as waypoints
+            geocoded_coords = [geocode_location(addr)[0][::-1] for addr in valid_ev_addresses]
+            ev_route = client.directions(geocoded_coords, profile='driving-hgv', format='geojson')
             ev_distance = sum(segment['distance'] for segment in ev_route['features'][0]['properties']['segments'])
             ev_distance_miles = round(ev_distance * 0.000621371 + len(used_ev_stations), 1)
 
@@ -157,7 +171,6 @@ def result():
     except Exception as e:
         return f"<h1>Route Error</h1><p>{e}</p>", 500
 
-# Run locally or on Render
 if __name__ == "__main__":
     port = int(os.environ.get("PORT", 5000))
     app.run(host="0.0.0.0", port=port)
