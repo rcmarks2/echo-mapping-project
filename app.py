@@ -98,7 +98,7 @@ def result():
         mid_lat = (start_coord[0] + end_coord[0]) / 2
         mid_lon = (start_coord[1] + end_coord[1]) / 2
 
-        # Diesel Map
+        # Diesel Route
         diesel_coords = (start_coord[::-1], end_coord[::-1])
         diesel_route = client.directions(
             diesel_coords,
@@ -116,12 +116,11 @@ def result():
             icon=folium.DivIcon(html=f"<div style='font-weight:bold;font-size:18px;color:black;text-align:center'>{diesel_distance} mi<br>Diesel Route</div>")
         ).add_to(diesel_map)
 
-        # EV Map
+        # EV Route
         ev_map = folium.Map(location=start_coord, zoom_start=5, tiles="CartoDB positron")
         create_marker(ev_map, start_coord, start_label)
         create_marker(ev_map, end_coord, end_label)
 
-        # Show all EV chargers
         for lat, lon in ev_coords:
             folium.CircleMarker(
                 location=(lat, lon),
@@ -156,20 +155,31 @@ def result():
                     fill_opacity=1
                 ).add_to(ev_map)
 
-            segments = ev_route['features'][0]['properties']['segments']
-            ev_distance_miles = round(sum(s['distance'] for s in segments) * 0.000621371 + len(used_stations), 1)
+            try:
+                segments = ev_route['features'][0]['properties'].get('segments', [])
+                if not segments:
+                    raise ValueError("No EV segments found in API response.")
 
-            folium.Marker(
-                location=[mid_lat - 0.75, mid_lon],
-                icon=folium.DivIcon(html=f"<div style='font-weight:bold;font-size:18px;color:black;text-align:center'>{ev_distance_miles} mi<br>EV Route</div>")
-            ).add_to(ev_map)
+                ev_distance_miles = round(
+                    sum(s['distance'] for s in segments) * 0.000621371 + len(used_stations), 1
+                )
+
+                folium.Marker(
+                    location=[mid_lat - 0.75, mid_lon],
+                    icon=folium.DivIcon(html=f"<div style='font-weight:bold;font-size:18px;color:black;text-align:center'>{ev_distance_miles} mi<br>EV Route</div>")
+                ).add_to(ev_map)
+
+            except Exception as e:
+                folium.Marker(
+                    location=[mid_lat - 1, mid_lon],
+                    icon=folium.DivIcon(html=f"<div style='font-weight:bold;color:red;font-size:18px;'>EV Route Error:<br>{str(e)}</div>")
+                ).add_to(ev_map)
         else:
             folium.Marker(
                 location=[mid_lat - 1, mid_lon],
                 icon=folium.DivIcon(html="<div style='font-weight:bold;color:red;font-size:18px;'>EV Truck<br>Not Feasible</div>")
             ).add_to(ev_map)
 
-        # Save maps
         diesel_map.save("static/diesel_map.html")
         ev_map.save("static/ev_map.html")
 
