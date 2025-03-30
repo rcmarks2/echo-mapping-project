@@ -4,3 +4,4 @@ geopy
 openrouteservice
 pandas
 shapely
+openpyxl
