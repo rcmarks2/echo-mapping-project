@@ -50,6 +50,7 @@
             width: 280px;
             border: 1px solid #ccc;
             border-radius: 5px;
+            font-size: 16px;
         }
 
         input[type="submit"] {
@@ -59,6 +60,7 @@
             border: none;
             border-radius: 5px;
             font-weight: bold;
+            font-size: 16px;
             cursor: pointer;
         }
 
@@ -70,6 +72,9 @@
             color: #333;
             font-size: 18px;
             margin-top: 30px;
+            max-width: 600px;
+            margin-left: auto;
+            margin-right: auto;
         }
     </style>
 </head>
@@ -81,14 +86,14 @@
     
     <div class="container">
         <form action="/result" method="post">
-            <h2>Compare Diesel vs EV Semi-Truck Routes</h2>
+            <h2 style="color: #002f5f;">Compare Diesel vs EV Semi-Truck Routes</h2>
             <input type="text" name="start" placeholder="Enter starting city, state" required><br>
             <input type="text" name="end" placeholder="Enter destination city, state" required><br>
             <input type="submit" value="Generate Routes">
         </form>
 
         <div class="description">
-            <p>This tool compares traditional diesel routes with EV truck routes that must recharge every 225 miles using real charger data.</p>
+            <p>This tool helps visualize and compare semi-truck safe routes for Diesel and EV trucks — with EV trucks stopping to recharge every 225 miles at exact charger locations.</p>
         </div>
     </div>
 </body>
