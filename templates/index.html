@@ -2,16 +2,41 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8">
-  <title>Enter Route</title>
+  <title>Truck Route Planner</title>
+  <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@400;600;800&display=swap" rel="stylesheet">
   <style>
     body {
-      font-family: Arial, sans-serif;
+      font-family: 'Montserrat', sans-serif;
       background-color: #f4f7fb;
+      margin: 0;
+      padding: 0;
+    }
+
+    header {
+      background-color: #003366;
+      padding: 20px;
+      position: relative;
+      color: white;
+      text-align: center;
+    }
+
+    .logo {
+      position: absolute;
+      top: 15px;
+      right: 30px;
+      height: 50px;
+    }
+
+    h1 {
+      font-weight: 800;
+      font-size: 28px;
+      margin: 0;
+    }
+
+    .form-wrapper {
       display: flex;
       justify-content: center;
-      align-items: center;
-      height: 100vh;
-      margin: 0;
+      margin-top: 50px;
     }
 
     .form-container {
@@ -20,11 +45,6 @@
       border-radius: 10px;
       box-shadow: 0 0 15px rgba(0,0,0,0.1);
       width: 350px;
-    }
-
-    h1 {
-      text-align: center;
-      color: #003366;
     }
 
     label {
@@ -59,17 +79,23 @@
   </style>
 </head>
 <body>
-  <div class="form-container">
+  <header>
     <h1>Truck Route Planner</h1>
-    <form method="POST" action="/result">
-      <label for="start">Enter starting city and state:</label>
-      <input type="text" id="start" name="start" required>
+    <img src="{{ url_for('static', filename='logo.png') }}" class="logo" alt="Echo Logo">
+  </header>
 
-      <label for="end">Enter destination city and state:</label>
-      <input type="text" id="end" name="end" required>
+  <div class="form-wrapper">
+    <div class="form-container">
+      <form method="POST" action="/result">
+        <label for="start">Enter starting city and state:</label>
+        <input type="text" id="start" name="start" required>
 
-      <button type="submit">Map Route</button>
-    </form>
+        <label for="end">Enter destination city and state:</label>
+        <input type="text" id="end" name="end" required>
+
+        <button type="submit">Map Route</button>
+      </form>
+    </div>
   </div>
 </body>
 </html>
