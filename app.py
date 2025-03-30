@@ -8,7 +8,8 @@ from openrouteservice import Client
 from math import radians, cos, sin, asin, sqrt
 
 app = Flask(__name__)
-client = Client(key="5b3ce3597851110001cf6248a92956daf1e74ff1b93a12f8c30baf99")
+import os
+client = Client(key=os.environ.get("ORS_API_KEY"))
 
 # Haversine formula for distance in miles
 def haversine(coord1, coord2):
