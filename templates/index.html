@@ -1,100 +1,78 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-    <meta charset="UTF-8">
-    <title>Echo Route Comparison</title>
-    <link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Open+Sans:400,700">
-    <style>
-        body {
-            font-family: 'Open Sans', sans-serif;
-            background-color: #f4f6f8;
-            margin: 0;
-            padding: 0;
-        }
-
-        header {
-            background-color: #002f5f;
-            color: white;
-            padding: 20px;
-            position: relative;
-        }
-
-        header h1 {
-            margin: 0;
-            font-size: 26px;
-        }
-
-        header img {
-            position: absolute;
-            top: 15px;
-            right: 20px;
-            height: 40px;
-        }
-
-        .container {
-            text-align: center;
-            margin-top: 60px;
-        }
-
-        form {
-            display: inline-block;
-            background: white;
-            padding: 40px;
-            border-radius: 8px;
-            box-shadow: 0 4px 8px rgba(0,0,0,0.1);
-        }
-
-        input[type="text"] {
-            padding: 12px;
-            margin: 10px;
-            width: 280px;
-            border: 1px solid #ccc;
-            border-radius: 5px;
-            font-size: 16px;
-        }
-
-        input[type="submit"] {
-            padding: 12px 25px;
-            background-color: #0070c0;
-            color: white;
-            border: none;
-            border-radius: 5px;
-            font-weight: bold;
-            font-size: 16px;
-            cursor: pointer;
-        }
-
-        input[type="submit"]:hover {
-            background-color: #005a9e;
-        }
-
-        .description {
-            color: #333;
-            font-size: 18px;
-            margin-top: 30px;
-            max-width: 600px;
-            margin-left: auto;
-            margin-right: auto;
-        }
-    </style>
+  <meta charset="UTF-8">
+  <title>Echo EV vs Diesel Route Mapper</title>
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Roboto:wght@400;700&display=swap">
+  <style>
+    body {
+      font-family: 'Roboto', sans-serif;
+      background-color: #f3f6fa;
+      margin: 0;
+      padding: 0;
+    }
+    .container {
+      max-width: 500px;
+      margin: 80px auto;
+      padding: 30px;
+      background-color: white;
+      border-radius: 10px;
+      box-shadow: 0px 4px 15px rgba(0, 0, 0, 0.1);
+      text-align: center;
+    }
+    h1 {
+      color: #003865;
+      margin-bottom: 20px;
+    }
+    label {
+      font-weight: bold;
+      display: block;
+      margin-top: 20px;
+      color: #333;
+    }
+    input[type="text"] {
+      width: 100%;
+      padding: 10px;
+      margin-top: 5px;
+      border: 1px solid #ccc;
+      border-radius: 6px;
+      font-size: 16px;
+    }
+    button {
+      background-color: #003865;
+      color: white;
+      font-weight: bold;
+      border: none;
+      padding: 12px 20px;
+      border-radius: 6px;
+      margin-top: 25px;
+      font-size: 16px;
+      cursor: pointer;
+    }
+    button:hover {
+      background-color: #0057b8;
+    }
+    .logo {
+      position: absolute;
+      top: 20px;
+      right: 20px;
+      height: 60px;
+    }
+  </style>
 </head>
 <body>
-    <header>
-        <h1>Echo Global Route Mapping Tool</h1>
-        <img src="{{ url_for('static', filename='logo.png') }}" alt="Echo Logo">
-    </header>
-    
-    <div class="container">
-        <form action="/result" method="post">
-            <h2 style="color: #002f5f;">Compare Diesel vs EV Semi-Truck Routes</h2>
-            <input type="text" name="start" placeholder="Enter starting city, state" required><br>
-            <input type="text" name="end" placeholder="Enter destination city, state" required><br>
-            <input type="submit" value="Generate Routes">
-        </form>
+  <img class="logo" src="{{ url_for('static', filename='logo.png') }}" alt="Echo Logo">
+  <div class="container">
+    <h1>Truck Route Planner</h1>
+    <form method="POST" action="/result">
+      <label for="start">Enter starting city and state:</label>
+      <input type="text" name="start" id="start" required>
 
-        <div class="description">
-            <p>This tool helps visualize and compare semi-truck safe routes for Diesel and EV trucks — with EV trucks stopping to recharge every 225 miles at exact charger locations.</p>
-        </div>
-    </div>
+      <label for="end">Enter destination city and state:</label>
+      <input type="text" name="end" id="end" required>
+
+      <button type="submit">Map Route</button>
+    </form>
+  </div>
 </body>
 </html>
