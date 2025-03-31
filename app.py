@@ -15,7 +15,7 @@ combined = pd.concat([pd.read_excel(f) for f in file_paths])
 ev_coords = list(zip(combined['Latitude'], combined['Longitude']))
 
 def geocode_location(location):
-    loc = geolocator.geocode(location)
+    loc = geolocator.geocode(location, timeout=10)
     return (loc.latitude, loc.longitude), loc
 
 def format_label(loc):
@@ -41,9 +41,9 @@ def create_marker(map_obj, coord, label, color='gold'):
 def calculate_distance(a, b):
     return geodesic(a, b).miles
 
-def offset_coord(coord, offset=0.00001):
-    # Shift coordinate slightly to create a before/after charger "detour"
-    return (coord[0] + offset, coord[1] + offset)
+def offset(coord, distance=0.0003):
+    """Offset coordinate very slightly for detour effect"""
+    return (coord[0] + distance, coord[1] + distance)
 
 def build_ev_route(start, end, max_leg=225):
     route = [start]
@@ -121,18 +121,15 @@ def result():
                 seg_start = ev_path[i]
                 seg_end = ev_path[i + 1]
 
-                # If going to or from a charger, force route to touch it by inserting detour points
+                coords = []
                 if seg_end in used_ev_stations:
-                    detour = [
-                        seg_start[::-1],
-                        offset_coord(seg_end)[::-1],
-                        seg_end[::-1],
-                        offset_coord(seg_end, -0.00001)[::-1]
-                    ]
+                    before = offset(seg_end, distance=0.0003)[::-1]
+                    after = offset(seg_end, distance=-0.0003)[::-1]
+                    coords = [seg_start[::-1], before, seg_end[::-1], after, seg_end[::-1], seg_start[::-1]]
                 else:
-                    detour = [seg_start[::-1], seg_end[::-1]]
+                    coords = [seg_start[::-1], seg_end[::-1]]
 
-                segment_route = client.directions(detour, profile='driving-car', format='geojson')
+                segment_route = client.directions(coords, profile='driving-car', format='geojson')
                 folium.GeoJson(segment_route, style_function=lambda x: {'color': 'gold', 'weight': 5}).add_to(ev_map)
                 segment_distance = segment_route['features'][0]['properties']['segments'][0]['distance']
                 total_distance += segment_distance
@@ -164,7 +161,7 @@ def result():
     except Exception as e:
         return f"<h1>Route Error</h1><p>{e}</p>"
 
-# Render-specific port binding
+# For Render
 if __name__ == "__main__":
     port = int(os.environ.get("PORT", 5000))
     app.run(host="0.0.0.0", port=port)
