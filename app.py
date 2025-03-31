@@ -1,16 +1,16 @@
 from flask import Flask, render_template, request
 from openrouteservice import Client
 from geopy.geocoders import Nominatim
+from geopy.distance import geodesic
 import folium
 import pandas as pd
 import os
-from geopy.distance import geodesic
 
 app = Flask(__name__)
 geolocator = Nominatim(user_agent="route_mapper")
 client = Client(key=os.environ.get("ORS_API_KEY"))
 
-# Load EV station data
+# Load EV stations
 file_paths = [f"{i}.xlsx" for i in range(1, 8)]
 combined = pd.concat([pd.read_excel(f) for f in file_paths])
 ev_coords = list(zip(combined['Latitude'], combined['Longitude']))
@@ -34,7 +34,7 @@ def create_marker(map_obj, coord, label, color='gold'):
         fill=True,
         fill_opacity=1
     ).add_to(map_obj)
-    folium.map.Marker(
+    folium.Marker(
         location=[coord[0] + 0.4, coord[1]],
         icon=folium.DivIcon(html=f"<div style='font-weight:bold;font-size:14px;color:black;text-align:center'>{label}</div>")
     ).add_to(map_obj)
@@ -93,7 +93,7 @@ def result():
         ).add_to(diesel_map)
         diesel_map.save("static/diesel_map.html")
 
-        # EV Route
+        # EV Route Map
         ev_map = folium.Map(location=start_coord, zoom_start=6, tiles="CartoDB positron")
         create_marker(ev_map, start_coord, start_label)
         create_marker(ev_map, end_coord, end_label)
@@ -109,33 +109,43 @@ def result():
 
         ev_path = build_ev_route(start_coord, end_coord)
         if ev_path:
-            total_distance = 0
             used_ev_stations = ev_path[1:-1]
+            total_ev_distance = 0
 
+            # Plot main EV route (start → evs → end)
             for i in range(len(ev_path) - 1):
-                segment_coords = [ev_path[i], ev_path[i + 1]]
-                reversed_coords = [point[::-1] for point in segment_coords]
+                seg = [ev_path[i][::-1], ev_path[i + 1][::-1]]
+                segment_route = client.directions(seg, profile='driving-car', format='geojson')
+                folium.GeoJson(segment_route, style_function=lambda x: {'color': 'gold', 'weight': 5}).add_to(ev_map)
+                dist = segment_route['features'][0]['properties']['segments'][0]['distance']
+                total_ev_distance += dist
 
-                route_segment = client.directions(reversed_coords, profile='driving-car', format='geojson')
-                folium.GeoJson(route_segment, style_function=lambda x: {'color': 'gold', 'weight': 5}).add_to(ev_map)
-
-                distance = route_segment['features'][0]['properties']['segments'][0]['distance']
-                total_distance += distance
-
-            ev_distance_miles = round(total_distance * 0.000621371 + len(used_ev_stations), 1)
-
-            for station in used_ev_stations:
+            # Highlight red chargers
+            for charger in used_ev_stations:
                 folium.CircleMarker(
-                    location=station,
+                    location=charger,
                     radius=8,
                     color='red',
                     fill=True,
                     fill_opacity=1
                 ).add_to(ev_map)
 
+            # Add up all detour distances
+            detour_extra = 0
+            for charger in used_ev_stations:
+                route_to_ev = client.directions([start_coord[::-1], charger[::-1]], profile='driving-car', format='geojson')
+                dist = route_to_ev['features'][0]['properties']['segments'][0]['distance']
+                detour_extra += dist
+
+            baseline_ev_route = client.directions([start_coord[::-1], end_coord[::-1]], profile='driving-car', format='geojson')
+            baseline_dist = baseline_ev_route['features'][0]['properties']['segments'][0]['distance']
+            detour_added_miles = round((detour_extra - baseline_dist) * 0.000621371, 1)
+
+            final_ev_distance = round(total_ev_distance * 0.000621371 + detour_added_miles, 1)
+
             folium.Marker(
                 location=[mid_lat - 1, mid_lon],
-                icon=folium.DivIcon(html=f"<div style='font-weight:bold;font-size:16px;color:black;text-align:center'>{ev_distance_miles} mi<br>EV Route</div>")
+                icon=folium.DivIcon(html=f"<div style='font-weight:bold;font-size:16px;color:black;text-align:center'>{final_ev_distance} mi<br>EV Route</div>")
             ).add_to(ev_map)
         else:
             folium.map.Marker(
