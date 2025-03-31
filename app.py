@@ -10,7 +10,7 @@ app = Flask(__name__)
 geolocator = Nominatim(user_agent="route_mapper")
 client = Client(key=os.environ.get("ORS_API_KEY"))
 
-# Load EV stations from embedded Excel files
+# Load EV stations
 file_paths = [f"{i}.xlsx" for i in range(1, 8)]
 combined = pd.concat([pd.read_excel(f) for f in file_paths])
 ev_coords = list(zip(combined['Latitude'], combined['Longitude']))
@@ -99,7 +99,7 @@ def result():
         create_marker(ev_map, start_coord, start_label)
         create_marker(ev_map, end_coord, end_label)
 
-        # Mark all EV stations
+        # Show all chargers in blue-grey
         for lat, lon in ev_coords:
             folium.CircleMarker(
                 location=(lat, lon),
@@ -111,39 +111,36 @@ def result():
 
         ev_path = build_ev_route(start_coord, end_coord)
         if ev_path:
-            used_ev_stations = ev_path[1:-1]
+            used_stops = ev_path[1:-1]
             total_ev_distance = 0.0
 
-            # Plot the main EV route (truck-safe)
-            ev_main_coords = [(pt[1], pt[0]) for pt in ev_path]
-            ev_main_route = client.directions(ev_main_coords, profile='driving-hgv', format='geojson')
-            folium.GeoJson(ev_main_route, style_function=lambda x: {'color': 'gold', 'weight': 5}).add_to(ev_map)
-            total_ev_distance += ev_main_route['features'][0]['properties']['segments'][0]['distance']
+            for i in range(len(ev_path) - 1):
+                # Truck-safe segment
+                main_seg = [ev_path[i][::-1], ev_path[i + 1][::-1]]
+                main_route = client.directions(main_seg, profile='driving-hgv', format='geojson')
+                folium.GeoJson(main_route, style_function=lambda x: {'color': 'gold', 'weight': 5}).add_to(ev_map)
+                total_ev_distance += main_route['features'][0]['properties']['segments'][0]['distance']
 
-            # Plot individual detours (non-truck-safe to touch chargers)
-            for charger in used_ev_stations:
-                detour_coords = [(start_coord[1], start_coord[0]), (charger[1], charger[0])]
-                detour_route = client.directions(detour_coords, profile='driving-car', format='geojson')
-                folium.GeoJson(detour_route, style_function=lambda x: {'color': 'red', 'weight': 3, 'dashArray': '5, 10'}).add_to(ev_map)
-                total_ev_distance += detour_route['features'][0]['properties']['segments'][0]['distance']
+                # Force-touch detour for charging stop
+                if ev_path[i + 1] in used_stops:
+                    force_touch = [ev_path[i + 1][::-1], ev_path[i + 1][::-1]]
+                    charger_route = client.directions(force_touch, profile='driving-car', format='geojson')
+                    folium.GeoJson(charger_route, style_function=lambda x: {'color': 'red', 'weight': 2, 'dashArray': '5, 10'}).add_to(ev_map)
+                    total_ev_distance += charger_route['features'][0]['properties']['segments'][0]['distance']
 
-                # Red dot for charger used
-                folium.CircleMarker(
-                    location=charger,
-                    radius=8,
-                    color='red',
-                    fill=True,
-                    fill_opacity=1
-                ).add_to(ev_map)
+                    folium.CircleMarker(
+                        location=ev_path[i + 1],
+                        radius=8,
+                        color='red',
+                        fill=True,
+                        fill_opacity=1
+                    ).add_to(ev_map)
 
-            # Final mileage calculation
-            ev_miles = round(total_ev_distance * 0.000621371 + len(used_ev_stations), 1)
-
+            ev_miles = round(total_ev_distance * 0.000621371 + len(used_stops), 1)
             folium.Marker(
                 location=[mid_lat - 1, mid_lon],
                 icon=folium.DivIcon(html=f"<div style='font-weight:bold;font-size:16px;color:black;text-align:center'>{ev_miles} mi<br>EV Route</div>")
             ).add_to(ev_map)
-
         else:
             folium.map.Marker(
                 location=[mid_lat, mid_lon],
