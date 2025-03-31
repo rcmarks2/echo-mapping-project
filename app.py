@@ -10,7 +10,7 @@ app = Flask(__name__)
 geolocator = Nominatim(user_agent="route_mapper")
 client = Client(key=os.environ.get("ORS_API_KEY"))
 
-# Load EV station coordinates
+# Load EV charging station coordinates
 file_paths = [f"{i}.xlsx" for i in range(1, 8)]
 combined = pd.concat([pd.read_excel(f) for f in file_paths])
 ev_coords = list(zip(combined['Latitude'], combined['Longitude']))
@@ -78,7 +78,7 @@ def result():
         mid_lat = (start_coord[0] + end_coord[0]) / 2
         mid_lon = (start_coord[1] + end_coord[1]) / 2
 
-        # DIESEL ROUTE
+        # -------------------- DIESEL MAP --------------------
         diesel_coords = (start_coord[::-1], end_coord[::-1])
         diesel_route = client.directions(diesel_coords, profile='driving-hgv', format='geojson')
         diesel_distance = round(diesel_route['features'][0]['properties']['segments'][0]['distance'] * 0.000621371, 1)
@@ -93,7 +93,7 @@ def result():
         ).add_to(diesel_map)
         diesel_map.save("static/diesel_map.html")
 
-        # EV ROUTE
+        # -------------------- EV MAP --------------------
         ev_map = folium.Map(location=start_coord, zoom_start=6, tiles="CartoDB positron")
         create_marker(ev_map, start_coord, start_label)
         create_marker(ev_map, end_coord, end_label)
@@ -113,18 +113,16 @@ def result():
             used_ev_stations = ev_path[1:-1]
             total_ev_distance = 0.0
 
-            # Plot all charger-to-charger segments
+            # Plot charger-to-charger segments (driving-car to allow local road access)
             for i in range(len(ev_path) - 1):
                 segment = [ev_path[i][::-1], ev_path[i + 1][::-1]]
-                route_segment = client.directions(segment, profile='driving-car', format='geojson')
+                route_segment = client.directions(segment, profile='driving-hgv', format='geojson')  # still using semi-safe
                 folium.GeoJson(route_segment, style_function=lambda x: {'color': 'gold', 'weight': 5}).add_to(ev_map)
                 distance = route_segment['features'][0]['properties']['segments'][0]['distance']
                 total_ev_distance += distance
 
-            # Convert to miles and round
             ev_miles = round(total_ev_distance * 0.000621371, 1)
 
-            # Highlight chargers in red
             for charger in used_ev_stations:
                 folium.CircleMarker(
                     location=charger,
@@ -134,14 +132,11 @@ def result():
                     fill_opacity=1
                 ).add_to(ev_map)
 
-            # Display EV mileage on map
             folium.Marker(
                 location=[mid_lat - 1, mid_lon],
                 icon=folium.DivIcon(html=f"<div style='font-weight:bold;font-size:16px;color:black;text-align:center'>{ev_miles} mi<br>EV Route</div>")
             ).add_to(ev_map)
-
         else:
-            # No valid EV route
             folium.map.Marker(
                 location=[mid_lat, mid_lon],
                 icon=folium.DivIcon(html="<div style='font-weight:bold;color:red;font-size:18px;'>EV Truck<br>Not Feasible</div>")
@@ -153,7 +148,7 @@ def result():
     except Exception as e:
         return f"<h1>Route Error</h1><p>{e}</p>"
 
-# For Render
+# For Render deployment
 if __name__ == "__main__":
     port = int(os.environ.get("PORT", 5000))
     app.run(host="0.0.0.0", port=port)
