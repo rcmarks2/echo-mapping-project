@@ -10,6 +10,7 @@ app = Flask(__name__)
 geolocator = Nominatim(user_agent="route_mapper")
 client = Client(key=os.environ.get("ORS_API_KEY"))
 
+# Load EV station data
 file_paths = [f"{i}.xlsx" for i in range(1, 8)]
 combined = pd.concat([pd.read_excel(f) for f in file_paths])
 ev_coords = list(zip(combined['Latitude'], combined['Longitude']))
@@ -34,16 +35,12 @@ def create_marker(map_obj, coord, label, color='gold'):
         fill_opacity=1
     ).add_to(map_obj)
     folium.map.Marker(
-        location=[coord[0] + 0.5, coord[1]],
+        location=[coord[0] + 0.4, coord[1]],
         icon=folium.DivIcon(html=f"<div style='font-weight:bold;font-size:14px;color:black;text-align:center'>{label}</div>")
     ).add_to(map_obj)
 
 def calculate_distance(a, b):
     return geodesic(a, b).miles
-
-def offset(coord, distance=0.0003):
-    """Offset coordinate very slightly for detour effect"""
-    return (coord[0] + distance, coord[1] + distance)
 
 def build_ev_route(start, end, max_leg=225):
     route = [start]
@@ -78,7 +75,6 @@ def result():
         end_coord, end_raw = geocode_location(end_input)
         start_label = format_label(start_raw)
         end_label = format_label(end_raw)
-
         mid_lat = (start_coord[0] + end_coord[0]) / 2
         mid_lon = (start_coord[1] + end_coord[1]) / 2
 
@@ -91,7 +87,6 @@ def result():
         folium.GeoJson(diesel_route, style_function=lambda x: {'color': 'gold', 'weight': 5}).add_to(diesel_map)
         create_marker(diesel_map, start_coord, start_label)
         create_marker(diesel_map, end_coord, end_label)
-
         folium.Marker(
             location=[mid_lat + 1, mid_lon],
             icon=folium.DivIcon(html=f"<div style='font-weight:bold;font-size:16px;color:black;text-align:center'>{diesel_distance} mi<br>Diesel Route</div>")
@@ -118,21 +113,14 @@ def result():
             used_ev_stations = ev_path[1:-1]
 
             for i in range(len(ev_path) - 1):
-                seg_start = ev_path[i]
-                seg_end = ev_path[i + 1]
+                segment_coords = [ev_path[i], ev_path[i + 1]]
+                reversed_coords = [point[::-1] for point in segment_coords]
 
-                coords = []
-                if seg_end in used_ev_stations:
-                    before = offset(seg_end, distance=0.0003)[::-1]
-                    after = offset(seg_end, distance=-0.0003)[::-1]
-                    coords = [seg_start[::-1], before, seg_end[::-1], after, seg_end[::-1], seg_start[::-1]]
-                else:
-                    coords = [seg_start[::-1], seg_end[::-1]]
+                route_segment = client.directions(reversed_coords, profile='driving-car', format='geojson')
+                folium.GeoJson(route_segment, style_function=lambda x: {'color': 'gold', 'weight': 5}).add_to(ev_map)
 
-                segment_route = client.directions(coords, profile='driving-car', format='geojson')
-                folium.GeoJson(segment_route, style_function=lambda x: {'color': 'gold', 'weight': 5}).add_to(ev_map)
-                segment_distance = segment_route['features'][0]['properties']['segments'][0]['distance']
-                total_distance += segment_distance
+                distance = route_segment['features'][0]['properties']['segments'][0]['distance']
+                total_distance += distance
 
             ev_distance_miles = round(total_distance * 0.000621371 + len(used_ev_stations), 1)
 
