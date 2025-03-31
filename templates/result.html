@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8">
-  <title>Route Comparison</title>
+  <title>Route Comparison Results</title>
   <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Roboto:wght@400;700&display=swap">
   <style>
     body {
@@ -12,48 +12,47 @@
       padding: 0;
     }
 
-    .header {
-      background-color: white;
+    header {
+      background-color: #003865;
+      color: white;
       padding: 20px 30px;
       display: flex;
       justify-content: space-between;
       align-items: center;
-      box-shadow: 0 2px 6px rgba(0,0,0,0.1);
     }
 
-    .header h1 {
+    header h1 {
       margin: 0;
-      color: #003865;
-      font-size: 26px;
+      font-size: 24px;
     }
 
-    .header img {
+    header img {
       height: 50px;
     }
 
-    .map-container {
+    .map-wrapper {
       display: flex;
-      flex-wrap: wrap;
       justify-content: center;
-      gap: 30px;
+      flex-wrap: nowrap;
       padding: 30px;
+      gap: 30px;
     }
 
     .map-box {
-      background-color: white;
+      flex: 1;
+      max-width: 50%;
       border: 3px solid #003865;
       border-radius: 10px;
+      background-color: white;
       overflow: hidden;
-      max-width: 650px;
-      width: 100%;
     }
 
     .map-label {
       background-color: #003865;
       color: white;
       text-align: center;
-      font-weight: bold;
       font-size: 20px;
+      font-weight: bold;
       padding: 10px;
     }
 
@@ -63,41 +62,55 @@
       border: none;
     }
 
-    .back-button {
-      display: block;
-      margin: 30px auto 50px;
+    .back {
       text-align: center;
-      font-size: 18px;
-      font-weight: bold;
-      text-decoration: none;
-      color: #003865;
+      margin: 30px;
     }
 
-    .back-button:hover {
+    .back a {
+      font-size: 18px;
+      font-weight: bold;
+      color: #003865;
+      text-decoration: none;
+    }
+
+    .back a:hover {
       text-decoration: underline;
+    }
+
+    @media (max-width: 1000px) {
+      .map-wrapper {
+        flex-direction: column;
+        align-items: center;
+      }
+
+      .map-box {
+        max-width: 90%;
+      }
     }
   </style>
 </head>
 <body>
 
-  <div class="header">
-    <h1>Route Comparison Results</h1>
+  <header>
+    <h1>Echo Global Logistics</h1>
     <img src="{{ url_for('static', filename='logo.png') }}" alt="Echo Logo">
-  </div>
+  </header>
 
-  <div class="map-container">
+  <div class="map-wrapper">
     <div class="map-box">
       <div class="map-label">Diesel Route</div>
       <iframe src="{{ url_for('static', filename='diesel_map.html') }}"></iframe>
     </div>
-
     <div class="map-box">
       <div class="map-label">EV Route</div>
       <iframe src="{{ url_for('static', filename='ev_map.html') }}"></iframe>
     </div>
   </div>
 
-  <a class="back-button" href="/">← Back to Route Entry</a>
+  <div class="back">
+    <a href="/">← Back to Route Entry</a>
+  </div>
 
 </body>
 </html>

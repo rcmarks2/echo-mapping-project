@@ -10,12 +10,9 @@ app = Flask(__name__)
 geolocator = Nominatim(user_agent="route_mapper")
 client = Client(key=os.environ.get("ORS_API_KEY"))
 
-# Load EV station coordinates
 file_paths = [f"{i}.xlsx" for i in range(1, 8)]
 combined = pd.concat([pd.read_excel(f) for f in file_paths])
 ev_coords = list(zip(combined['Latitude'], combined['Longitude']))
-
-# ----- Utility Functions -----
 
 def geocode_location(location):
     loc = geolocator.geocode(location)
@@ -44,6 +41,10 @@ def create_marker(map_obj, coord, label, color='gold'):
 def calculate_distance(a, b):
     return geodesic(a, b).miles
 
+def offset_coord(coord, offset=0.00001):
+    # Shift coordinate slightly to create a before/after charger "detour"
+    return (coord[0] + offset, coord[1] + offset)
+
 def build_ev_route(start, end, max_leg=225):
     route = [start]
     current = start
@@ -63,8 +64,6 @@ def build_ev_route(start, end, max_leg=225):
     route.append(end)
     return route
 
-# ----- Flask Routes -----
-
 @app.route("/")
 def index():
     return render_template("index.html")
@@ -75,7 +74,6 @@ def result():
         start_input = request.form["start"]
         end_input = request.form["end"]
 
-        # Geocode locations
         start_coord, start_raw = geocode_location(start_input)
         end_coord, end_raw = geocode_location(end_input)
         start_label = format_label(start_raw)
@@ -84,7 +82,7 @@ def result():
         mid_lat = (start_coord[0] + end_coord[0]) / 2
         mid_lon = (start_coord[1] + end_coord[1]) / 2
 
-        # ----- Diesel Route -----
+        # Diesel Route
         diesel_coords = (start_coord[::-1], end_coord[::-1])
         diesel_route = client.directions(diesel_coords, profile='driving-hgv', format='geojson')
         diesel_distance = round(diesel_route['features'][0]['properties']['segments'][0]['distance'] * 0.000621371, 1)
@@ -100,12 +98,11 @@ def result():
         ).add_to(diesel_map)
         diesel_map.save("static/diesel_map.html")
 
-        # ----- EV Route -----
+        # EV Route
         ev_map = folium.Map(location=start_coord, zoom_start=6, tiles="CartoDB positron")
         create_marker(ev_map, start_coord, start_label)
         create_marker(ev_map, end_coord, end_label)
 
-        # Show all EV stations in slate gray
         for lat, lon in ev_coords:
             folium.CircleMarker(
                 location=(lat, lon),
@@ -121,11 +118,21 @@ def result():
             used_ev_stations = ev_path[1:-1]
 
             for i in range(len(ev_path) - 1):
-                seg_start = ev_path[i][::-1]
-                seg_end = ev_path[i + 1][::-1]
-                profile = 'driving-car' if ev_path[i + 1] in used_ev_stations else 'driving-hgv'
-                segment_route = client.directions((seg_start, seg_end), profile=profile, format='geojson')
+                seg_start = ev_path[i]
+                seg_end = ev_path[i + 1]
 
+                # If going to or from a charger, force route to touch it by inserting detour points
+                if seg_end in used_ev_stations:
+                    detour = [
+                        seg_start[::-1],
+                        offset_coord(seg_end)[::-1],
+                        seg_end[::-1],
+                        offset_coord(seg_end, -0.00001)[::-1]
+                    ]
+                else:
+                    detour = [seg_start[::-1], seg_end[::-1]]
+
+                segment_route = client.directions(detour, profile='driving-car', format='geojson')
                 folium.GeoJson(segment_route, style_function=lambda x: {'color': 'gold', 'weight': 5}).add_to(ev_map)
                 segment_distance = segment_route['features'][0]['properties']['segments'][0]['distance']
                 total_distance += segment_distance
@@ -157,7 +164,7 @@ def result():
     except Exception as e:
         return f"<h1>Route Error</h1><p>{e}</p>"
 
-# ----- Render Port Binding -----
+# Render-specific port binding
 if __name__ == "__main__":
     port = int(os.environ.get("PORT", 5000))
     app.run(host="0.0.0.0", port=port)
