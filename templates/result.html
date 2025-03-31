@@ -24,9 +24,9 @@
     .map-container {
       display: flex;
       justify-content: center;
-      flex-wrap: wrap;
       gap: 40px;
       padding: 40px;
+      flex-wrap: wrap;
     }
 
     .map-box {
@@ -55,6 +55,18 @@
       top: 20px;
       right: 20px;
       height: 40px;
+    }
+
+    @media screen and (max-width: 1200px) {
+      .map-container {
+        flex-direction: column;
+        align-items: center;
+      }
+
+      iframe {
+        width: 90vw;
+        height: 500px;
+      }
     }
   </style>
 </head>
