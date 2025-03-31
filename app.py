@@ -47,7 +47,6 @@ def build_ev_route(start, end, max_leg=225):
     current = start
 
     while calculate_distance(current, end) > max_leg:
-        # Find nearest charger within range
         candidates = sorted(ev_coords, key=lambda x: calculate_distance(current, x))
         found = False
         for station in candidates:
@@ -80,7 +79,7 @@ def result():
         mid_lat = (start_coord[0] + end_coord[0]) / 2
         mid_lon = (start_coord[1] + end_coord[1]) / 2
 
-        # DIESEL MAP
+        # DIESEL ROUTE
         diesel_coords = (start_coord[::-1], end_coord[::-1])
         diesel_route = client.directions(diesel_coords, profile='driving-hgv', format='geojson')
         diesel_distance = round(diesel_route['features'][0]['properties']['segments'][0]['distance'] * 0.000621371, 1)
@@ -95,11 +94,12 @@ def result():
         ).add_to(diesel_map)
         diesel_map.save("static/diesel_map.html")
 
-        # EV MAP
+        # EV ROUTE
         ev_map = folium.Map(location=start_coord, zoom_start=6, tiles="CartoDB positron")
         create_marker(ev_map, start_coord, start_label)
         create_marker(ev_map, end_coord, end_label)
 
+        # Mark all EV stations
         for lat, lon in ev_coords:
             folium.CircleMarker(
                 location=(lat, lon),
@@ -110,29 +110,34 @@ def result():
             ).add_to(ev_map)
 
         ev_path = build_ev_route(start_coord, end_coord)
-
         if ev_path:
-            total_ev_distance = 0.0
             used_ev_stations = ev_path[1:-1]
+            total_ev_distance = 0.0
 
-            for i in range(len(ev_path) - 1):
-                coord_pair = [ev_path[i][::-1], ev_path[i + 1][::-1]]
-                ev_leg = client.directions(coord_pair, profile='driving-hgv', format='geojson')
-                folium.GeoJson(ev_leg, style_function=lambda x: {'color': 'gold', 'weight': 5}).add_to(ev_map)
-                leg_distance = ev_leg['features'][0]['properties']['segments'][0]['distance']
-                total_ev_distance += leg_distance
+            # Plot the main EV route (truck-safe)
+            ev_main_coords = [(pt[1], pt[0]) for pt in ev_path]
+            ev_main_route = client.directions(ev_main_coords, profile='driving-hgv', format='geojson')
+            folium.GeoJson(ev_main_route, style_function=lambda x: {'color': 'gold', 'weight': 5}).add_to(ev_map)
+            total_ev_distance += ev_main_route['features'][0]['properties']['segments'][0]['distance']
 
-            # Add +1 mile per EV station used to simulate detours
-            ev_miles = round(total_ev_distance * 0.000621371 + len(used_ev_stations), 1)
+            # Plot individual detours (non-truck-safe to touch chargers)
+            for charger in used_ev_stations:
+                detour_coords = [(start_coord[1], start_coord[0]), (charger[1], charger[0])]
+                detour_route = client.directions(detour_coords, profile='driving-car', format='geojson')
+                folium.GeoJson(detour_route, style_function=lambda x: {'color': 'red', 'weight': 3, 'dashArray': '5, 10'}).add_to(ev_map)
+                total_ev_distance += detour_route['features'][0]['properties']['segments'][0]['distance']
 
-            for station in used_ev_stations:
+                # Red dot for charger used
                 folium.CircleMarker(
-                    location=station,
+                    location=charger,
                     radius=8,
                     color='red',
                     fill=True,
                     fill_opacity=1
                 ).add_to(ev_map)
+
+            # Final mileage calculation
+            ev_miles = round(total_ev_distance * 0.000621371 + len(used_ev_stations), 1)
 
             folium.Marker(
                 location=[mid_lat - 1, mid_lon],
@@ -151,7 +156,7 @@ def result():
     except Exception as e:
         return f"<h1>Route Error</h1><p>{e}</p>"
 
-# Render deploy support
+# For Render
 if __name__ == "__main__":
     port = int(os.environ.get("PORT", 5000))
     app.run(host="0.0.0.0", port=port)
