@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8">
-  <title>Echo EV vs Diesel Route Mapper</title>
+  <title>Echo Route Mapper</title>
   <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Roboto:wght@400;700&display=swap">
   <style>
     body {
@@ -13,40 +13,43 @@
     }
     .container {
       max-width: 500px;
-      margin: 80px auto;
+      margin: 100px auto;
       padding: 30px;
       background-color: white;
       border-radius: 10px;
-      box-shadow: 0px 4px 15px rgba(0, 0, 0, 0.1);
+      box-shadow: 0 0 15px rgba(0,0,0,0.1);
       text-align: center;
+      position: relative;
     }
-    h1 {
+    .container h1 {
       color: #003865;
+      font-size: 28px;
       margin-bottom: 20px;
     }
     label {
-      font-weight: bold;
       display: block;
       margin-top: 20px;
+      font-weight: bold;
       color: #333;
+      text-align: left;
     }
     input[type="text"] {
       width: 100%;
       padding: 10px;
-      margin-top: 5px;
-      border: 1px solid #ccc;
+      margin-top: 6px;
       border-radius: 6px;
+      border: 1px solid #ccc;
       font-size: 16px;
     }
     button {
-      background-color: #003865;
-      color: white;
-      font-weight: bold;
-      border: none;
-      padding: 12px 20px;
-      border-radius: 6px;
-      margin-top: 25px;
+      margin-top: 30px;
+      padding: 12px 24px;
       font-size: 16px;
+      font-weight: bold;
+      color: white;
+      background-color: #003865;
+      border: none;
+      border-radius: 6px;
       cursor: pointer;
     }
     button:hover {
@@ -54,24 +57,24 @@
     }
     .logo {
       position: absolute;
-      top: 20px;
-      right: 20px;
+      top: -80px;
+      right: -20px;
       height: 60px;
     }
   </style>
 </head>
 <body>
-  <img class="logo" src="{{ url_for('static', filename='logo.png') }}" alt="Echo Logo">
   <div class="container">
-    <h1>Truck Route Planner</h1>
+    <img src="{{ url_for('static', filename='logo.png') }}" class="logo" alt="Echo Logo">
+    <h1>EV vs Diesel Route Mapper</h1>
     <form method="POST" action="/result">
-      <label for="start">Enter starting city and state:</label>
+      <label for="start">Starting city and state (e.g., Chicago, IL):</label>
       <input type="text" name="start" id="start" required>
 
-      <label for="end">Enter destination city and state:</label>
+      <label for="end">Destination city and state (e.g., Atlanta, GA):</label>
       <input type="text" name="end" id="end" required>
 
-      <button type="submit">Map Route</button>
+      <button type="submit">Generate Routes</button>
     </form>
   </div>
 </body>
