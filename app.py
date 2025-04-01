@@ -15,6 +15,21 @@ file_paths = [f"{i}.xlsx" for i in range(1, 8)]
 combined = pd.concat([pd.read_excel(f) for f in file_paths])
 ev_coords = list(zip(combined['Latitude'], combined['Longitude']))
 
+# US state name to abbreviation
+STATE_ABBR = {
+    'Alabama': 'AL', 'Alaska': 'AK', 'Arizona': 'AZ', 'Arkansas': 'AR', 'California': 'CA',
+    'Colorado': 'CO', 'Connecticut': 'CT', 'Delaware': 'DE', 'Florida': 'FL', 'Georgia': 'GA',
+    'Hawaii': 'HI', 'Idaho': 'ID', 'Illinois': 'IL', 'Indiana': 'IN', 'Iowa': 'IA',
+    'Kansas': 'KS', 'Kentucky': 'KY', 'Louisiana': 'LA', 'Maine': 'ME', 'Maryland': 'MD',
+    'Massachusetts': 'MA', 'Michigan': 'MI', 'Minnesota': 'MN', 'Mississippi': 'MS', 'Missouri': 'MO',
+    'Montana': 'MT', 'Nebraska': 'NE', 'Nevada': 'NV', 'New Hampshire': 'NH', 'New Jersey': 'NJ',
+    'New Mexico': 'NM', 'New York': 'NY', 'North Carolina': 'NC', 'North Dakota': 'ND',
+    'Ohio': 'OH', 'Oklahoma': 'OK', 'Oregon': 'OR', 'Pennsylvania': 'PA', 'Rhode Island': 'RI',
+    'South Carolina': 'SC', 'South Dakota': 'SD', 'Tennessee': 'TN', 'Texas': 'TX', 'Utah': 'UT',
+    'Vermont': 'VT', 'Virginia': 'VA', 'Washington': 'WA', 'West Virginia': 'WV', 'Wisconsin': 'WI',
+    'Wyoming': 'WY'
+}
+
 def geocode_location(location):
     loc = geolocator.geocode(location, timeout=10)
     return (loc.latitude, loc.longitude), loc
@@ -28,9 +43,14 @@ def format_label(loc):
         or address.get("hamlet")
         or loc.address.split(',')[0]
     )
-    state = address.get("state", "")
-    state_abbr = state[:2].upper() if state else ""
-    return f"{city}, {state_abbr}"
+    state_full = address.get("state", "")
+    state_abbr = STATE_ABBR.get(state_full, "")
+    if city and state_abbr:
+        return f"{city}, {state_abbr}"
+    elif city:
+        return city
+    else:
+        return loc.address.split(',')[0]
 
 def create_marker(map_obj, coord, label, color='gold'):
     folium.CircleMarker(
@@ -108,14 +128,11 @@ def result():
                 fill_opacity=0.8
             ).add_to(ev_map)
 
-        # Determine if EV route can use the diesel route
         if diesel_distance <= 225:
-            # Route is short enough — reuse diesel path for EV
             folium.GeoJson(diesel_route, style_function=lambda x: {'color': 'gold', 'weight': 5}).add_to(ev_map)
             ev_miles = diesel_distance
             ev_unavailable = False
         else:
-            # Build EV route with chargers
             ev_path = build_ev_route(start_coord, end_coord)
             if ev_path:
                 used_ev_stations = ev_path[1:-1]
@@ -153,7 +170,6 @@ def result():
     except Exception as e:
         return f"<h2>Route Error</h2><p>{e}</p>"
 
-# For deployment
 if __name__ == "__main__":
     port = int(os.environ.get("PORT", 5000))
     app.run(host="0.0.0.0", port=port)
