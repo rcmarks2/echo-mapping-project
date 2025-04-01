@@ -45,10 +45,13 @@ def format_label(loc):
     )
     state_full = address.get("state", "")
     state_abbr = STATE_ABBR.get(state_full, "")
+    
     if city and state_abbr:
         return f"{city}, {state_abbr}"
     elif city:
         return city
+    elif state_abbr:
+        return state_abbr
     else:
         return loc.address.split(',')[0]
 
