@@ -3,67 +3,80 @@
 <head>
     <meta charset="UTF-8">
     <title>Echo Route Results</title>
-    <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Roboto:wght@400;700&display=swap">
+    <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@400;700&display=swap" rel="stylesheet">
     <style>
         body {
             font-family: 'Roboto', sans-serif;
             background-color: #ffffff;
-            color: #002f6c; /* Echo navy blue */
             margin: 0;
-            padding: 40px;
+            padding: 0;
+            color: #002f6c; /* Echo Navy Blue */
+        }
+
+        .header {
+            background-color: #002f6c;
+            color: #ffffff;
+            padding: 25px;
             text-align: center;
+            margin-bottom: 30px;
         }
 
         h1 {
-            font-size: 36px;
-            margin-bottom: 30px;
+            margin: 0;
+            font-size: 34px;
         }
 
         .container {
             display: flex;
             justify-content: space-around;
             flex-wrap: wrap;
+            padding: 0 20px;
         }
 
         .box {
+            width: 48%;
             background-color: #f8f9fa;
             border-radius: 8px;
             box-shadow: 0 6px 12px rgba(0,0,0,0.1);
-            width: 45%;
-            padding: 20px;
-            margin: 15px;
+            margin-bottom: 25px;
+            padding: 15px;
             box-sizing: border-box;
+        }
+
+        h2 {
+            color: #002f6c;
+            margin-bottom: 15px;
         }
 
         iframe {
             width: 100%;
-            height: 450px;
+            height: 400px;
             border: none;
             border-radius: 6px;
         }
 
-        h2 {
-            font-size: 24px;
-            margin-bottom: 10px;
-            color: #002f6c;
+        .info {
+            font-weight: 700;
+            color: #333;
+            margin-top: 12px;
+            font-size: 15px;
         }
 
-        .info {
-            font-size: 16px;
-            font-weight: bold;
-            margin-top: 10px;
-            color: #333;
+        .info span {
+            font-weight: 400;
+            color: #555;
         }
 
         .error {
             color: red;
             font-weight: bold;
-            font-size: 20px;
-            margin-top: 15px;
+            font-size: 18px;
+            margin-top: 12px;
         }
 
         .back-link {
-            margin-top: 40px;
+            text-align: center;
+            margin: 30px 0;
         }
 
         .back-link a {
@@ -85,7 +98,9 @@
 </head>
 <body>
 
-    <h1>Route Comparison Results</h1>
+    <div class="header">
+        <h1>Route Comparison Results</h1>
+    </div>
 
     <div class="container">
 
@@ -93,13 +108,13 @@
         <div class="box">
             <h2>Diesel Truck Route</h2>
             <iframe src="{{ url_for('static', filename='diesel_map.html') }}"></iframe>
-            
-            <div class="info">Total Mileage: {{ diesel_miles }} mi</div>
-            <div class="info">Truck MPG: {{ mpg }} mpg</div>
-            <div class="info">Annual Trips: {{ annual_trips or 'N/A' }}</div>
-            
-            <div class="info">Total Cost: <span style="color:#555;">(coming soon)</span></div>
-            <div class="info">Total Emissions: <span style="color:#555;">(coming soon)</span></div>
+
+            <div class="info">Total Mileage: <span>{{ diesel_miles }} mi</span></div>
+            <div class="info">Truck MPG: <span>{{ mpg }} mpg</span></div>
+            <div class="info">Annual Trips: <span>{{ annual_trips or 'N/A' }}</span></div>
+
+            <div class="info">Annual Total Cost: <span>(calculations coming soon)</span></div>
+            <div class="info">Annual Total Emissions: <span>(calculations coming soon)</span></div>
         </div>
 
         <!-- EV Route Box -->
@@ -110,12 +125,12 @@
             {% if ev_unavailable %}
                 <div class="error">EV Route Not Possible</div>
             {% else %}
-                <div class="info">Total Mileage: {{ ev_miles }} mi</div>
-                <div class="info">Truck MPG: <span style="color:#555;">N/A (EV)</span></div>
-                <div class="info">Annual Trips: {{ annual_trips or 'N/A' }}</div>
-                
-                <div class="info">Total Cost: <span style="color:#555;">(coming soon)</span></div>
-                <div class="info">Total Emissions: <span style="color:#555;">(coming soon)</span></div>
+                <div class="info">Total Mileage: <span>{{ ev_miles }} mi</span></div>
+                <div class="info">Truck MPG: <span>N/A (EV)</span></div>
+                <div class="info">Annual Trips: <span>{{ annual_trips or 'N/A' }}</span></div>
+
+                <div class="info">Annual Total Cost: <span>(calculations coming soon)</span></div>
+                <div class="info">Annual Total Emissions: <span>(calculations coming soon)</span></div>
             {% endif %}
         </div>
 

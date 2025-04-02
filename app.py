@@ -43,7 +43,7 @@ def format_label(loc):
     state_abbr = STATE_ABBR.get(address.get("state", ""), "")
     return f"{city}, {state_abbr}" if city and state_abbr else loc.address.split(',')[0]
 
-def create_marker(map_obj, coord, label, color='#002f6c'):  # Echo navy blue color
+def create_marker(map_obj, coord, label, color='#002f6c', offset=0.6):
     folium.CircleMarker(
         location=coord,
         radius=10,
@@ -52,7 +52,7 @@ def create_marker(map_obj, coord, label, color='#002f6c'):  # Echo navy blue col
         fill_opacity=1
     ).add_to(map_obj)
     folium.Marker(
-        location=[coord[0] + 0.4, coord[1]],
+        location=[coord[0] + offset, coord[1]],
         icon=folium.DivIcon(html=f"<div style='font-family:Roboto;font-weight:bold;font-size:14px;color:#002f6c'>{label}</div>")
     ).add_to(map_obj)
 
@@ -87,9 +87,11 @@ def result():
     try:
         start_input = request.form["start"]
         end_input = request.form["end"]
-
         mpg_input = request.form.get("mpg")
+        annual_trips_input = request.form.get("annual_trips")
+
         mpg = float(mpg_input) if mpg_input else 9.0
+        annual_trips = int(annual_trips_input) if annual_trips_input else None
 
         start_coord, start_raw = geocode_location(start_input)
         end_coord, end_raw = geocode_location(end_input)
@@ -97,7 +99,7 @@ def result():
         start_label = format_label(start_raw)
         end_label = format_label(end_raw)
 
-        # Diesel route calculation
+        # Diesel route
         diesel_coords = (start_coord[::-1], end_coord[::-1])
         diesel_route = client.directions(diesel_coords, profile='driving-hgv', format='geojson')
         diesel_distance_km = diesel_route['features'][0]['properties']['segments'][0]['distance']
@@ -109,24 +111,17 @@ def result():
         create_marker(diesel_map, end_coord, end_label)
         diesel_map.save("static/diesel_map.html")
 
-        # EV route calculation
+        # EV route
         ev_map = folium.Map(location=start_coord, zoom_start=6, tiles="CartoDB positron")
         create_marker(ev_map, start_coord, start_label)
         create_marker(ev_map, end_coord, end_label)
 
         for lat, lon in ev_coords:
-            folium.CircleMarker(
-                location=(lat, lon),
-                radius=6,
-                color='#888888',
-                fill=True,
-                fill_opacity=0.8
-            ).add_to(ev_map)
+            folium.CircleMarker((lat, lon), radius=6, color='#888888', fill=True).add_to(ev_map)
 
         if diesel_distance <= 225:
             folium.GeoJson(diesel_route, style_function=lambda x: {'color': '#002f6c', 'weight': 5}).add_to(ev_map)
-            ev_miles = diesel_distance
-            ev_unavailable = False
+            ev_miles, ev_unavailable = diesel_distance, False
         else:
             ev_path = build_ev_route(start_coord, end_coord)
             if ev_path:
@@ -137,10 +132,11 @@ def result():
                     folium.GeoJson(route_segment, style_function=lambda x: {'color': '#002f6c', 'weight': 5}).add_to(ev_map)
                     total_ev_distance += route_segment['features'][0]['properties']['segments'][0]['distance']
                 ev_miles = round(total_ev_distance * 0.000621371 + len(ev_path)-2, 1)
+                for charger in ev_path[1:-1]:
+                    folium.CircleMarker(charger, radius=8, color='#4CAF50', fill=True).add_to(ev_map)
                 ev_unavailable = False
             else:
-                ev_miles = None
-                ev_unavailable = True
+                ev_miles, ev_unavailable = None, True
 
         ev_map.save("static/ev_map.html")
 
@@ -148,7 +144,8 @@ def result():
                                diesel_miles=diesel_distance,
                                ev_miles=ev_miles,
                                ev_unavailable=ev_unavailable,
-                               mpg=mpg)
+                               mpg=mpg,
+                               annual_trips=annual_trips)
 
     except Exception as e:
         return f"<h2>Error</h2><p>{e}</p>"

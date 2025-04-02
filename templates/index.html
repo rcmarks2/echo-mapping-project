@@ -3,74 +3,81 @@
 <head>
     <meta charset="UTF-8">
     <title>Echo Route Mapper</title>
-    <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Roboto:wght@400;700&display=swap">
+    <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@400;700&display=swap" rel="stylesheet">
     <style>
         body {
             font-family: 'Roboto', sans-serif;
             background-color: #ffffff;
-            color: #002f6c; /* Echo navy blue */
             margin: 0;
-            padding: 50px;
-            text-align: center;
+            padding: 0;
+            color: #002f6c; /* Echo Navy Blue */
         }
 
-        h1 {
-            font-size: 36px;
-            font-weight: bold;
+        .header {
+            background-color: #002f6c;
+            color: #ffffff;
+            padding: 25px;
+            text-align: center;
             margin-bottom: 30px;
         }
 
+        h1 {
+            margin: 0;
+            font-size: 34px;
+        }
+
         form {
-            background-color: #f8f9fa;
-            display: inline-block;
+            max-width: 500px;
+            margin: 0 auto;
             padding: 30px;
-            border-radius: 8px;
+            background-color: #f8f9fa;
             box-shadow: 0 6px 12px rgba(0,0,0,0.1);
-            text-align: left;
-            max-width: 450px;
-            width: 100%;
+            border-radius: 8px;
         }
 
         label {
-            font-weight: bold;
+            font-weight: 700;
             display: block;
             margin-bottom: 6px;
         }
 
-        input[type="text"], input[type="number"] {
+        input[type="text"],
+        input[type="number"] {
             width: 100%;
             padding: 10px;
-            margin-bottom: 18px;
-            border-radius: 4px;
+            margin-bottom: 20px;
             border: 1px solid #ccc;
+            border-radius: 4px;
             box-sizing: border-box;
         }
 
-        .optional {
-            font-size: 12px;
-            color: #777;
-            font-weight: normal;
-        }
-
         button {
-            background-color: #4CAF50; /* Echo green */
+            background-color: #4CAF50; /* Echo Green */
             color: white;
-            font-size: 16px;
-            padding: 12px 20px;
+            padding: 12px;
             border: none;
+            width: 100%;
             border-radius: 4px;
             cursor: pointer;
-            width: 100%;
+            font-size: 16px;
         }
 
         button:hover {
             background-color: #3d8c40;
         }
+
+        .optional {
+            font-weight: 400;
+            font-size: 12px;
+            color: #666;
+        }
     </style>
 </head>
 <body>
 
-    <h1>Echo Route Mapper</h1>
+    <div class="header">
+        <h1>Echo Route Mapper</h1>
+    </div>
 
     <form action="/result" method="POST">
         <label for="start">Start Location</label>
@@ -88,4 +95,5 @@
         <button type="submit">Calculate Route</button>
     </form>
 
-</body
+</body>
+</html>
