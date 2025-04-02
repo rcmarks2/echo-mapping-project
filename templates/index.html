@@ -10,7 +10,8 @@
             background-color: #ffffff;
             margin: 0;
             padding: 0;
-            color: #002f6c; /* Echo Navy Blue */
+            color: #002f6c;
+            position: relative;
         }
 
         .header {
@@ -18,7 +19,15 @@
             color: #ffffff;
             padding: 25px;
             text-align: center;
-            margin-bottom: 30px;
+            position: relative;
+        }
+
+        .header img.echo-logo {
+            position: absolute;
+            right: 20px;
+            top: 50%;
+            transform: translateY(-50%);
+            height: 50px;
         }
 
         h1 {
@@ -28,7 +37,7 @@
 
         form {
             max-width: 500px;
-            margin: 0 auto;
+            margin: 50px auto;
             padding: 30px;
             background-color: #f8f9fa;
             box-shadow: 0 6px 12px rgba(0,0,0,0.1);
@@ -52,7 +61,7 @@
         }
 
         button {
-            background-color: #4CAF50; /* Echo Green */
+            background-color: #4CAF50;
             color: white;
             padding: 12px;
             border: none;
@@ -71,12 +80,20 @@
             font-size: 12px;
             color: #666;
         }
+
+        .uiuc-logo {
+            position: fixed;
+            bottom: 15px;
+            left: 15px;
+            height: 50px;
+        }
     </style>
 </head>
 <body>
 
     <div class="header">
         <h1>Echo Route Mapper</h1>
+        <img src="{{ url_for('static', filename='echo_logo.png') }}" alt="Echo Logo" class="echo-logo">
     </div>
 
     <form action="/result" method="POST">
@@ -94,6 +111,8 @@
 
         <button type="submit">Calculate Route</button>
     </form>
+
+    <img src="{{ url_for('static', filename='uiuc_logo.png') }}" alt="UIUC Logo" class="uiuc-logo">
 
 </body>
 </html>
