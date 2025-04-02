@@ -2,70 +2,74 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <title>Route Results</title>
+    <title>Echo Route Results</title>
     <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Roboto:wght@400;700&display=swap">
     <style>
         body {
             font-family: 'Roboto', sans-serif;
-            background-color: #f8f9fa;
+            background-color: #ffffff;
+            color: #002f6c; /* Echo navy blue */
             margin: 0;
             padding: 40px;
-        }
-
-        h1, h2 {
             text-align: center;
-            color: #1a1a1a;
-            margin-bottom: 20px;
         }
 
-        .maps-container {
+        h1 {
+            font-size: 36px;
+            margin-bottom: 30px;
+        }
+
+        .container {
             display: flex;
-            justify-content: space-between;
-            gap: 40px;
+            justify-content: space-around;
             flex-wrap: wrap;
         }
 
-        .map-box {
-            flex: 1;
-            min-width: 45%;
-            background-color: white;
-            border: 2px solid #1a1a1a;
-            box-shadow: 2px 2px 10px rgba(0,0,0,0.1);
+        .box {
+            background-color: #f8f9fa;
+            border-radius: 8px;
+            box-shadow: 0 6px 12px rgba(0,0,0,0.1);
+            width: 45%;
             padding: 20px;
+            margin: 15px;
+            box-sizing: border-box;
         }
 
-        .map-box iframe {
+        iframe {
             width: 100%;
-            height: 500px;
+            height: 450px;
             border: none;
+            border-radius: 6px;
         }
 
-        .mileage, .mpg, .cost, .emissions {
-            text-align: center;
-            margin-top: 10px;
+        h2 {
+            font-size: 24px;
+            margin-bottom: 10px;
+            color: #002f6c;
+        }
+
+        .info {
+            font-size: 16px;
             font-weight: bold;
-            font-size: 18px;
+            margin-top: 10px;
             color: #333;
         }
 
         .error {
-            text-align: center;
             color: red;
             font-weight: bold;
-            font-size: 22px;
-            margin-top: 10px;
+            font-size: 20px;
+            margin-top: 15px;
         }
 
         .back-link {
-            display: block;
-            text-align: center;
             margin-top: 40px;
         }
 
         .back-link a {
+            color: #4CAF50;
             text-decoration: none;
             font-weight: bold;
-            color: #007bff;
         }
 
         .back-link a:hover {
@@ -73,51 +77,53 @@
         }
 
         @media (max-width: 900px) {
-            .maps-container {
-                flex-direction: column;
-                align-items: center;
+            .box {
+                width: 100%;
             }
-        }
-
-        .summary-box {
-            width: 100%;
-            background-color: white;
-            border: 2px solid #1a1a1a;
-            box-shadow: 2px 2px 10px rgba(0,0,0,0.1);
-            padding: 20px;
-            margin-top: 30px;
         }
     </style>
 </head>
 <body>
-    <h1>Route Comparison</h1>
 
-    <div class="maps-container">
-        <div class="map-box">
-            <h2>Diesel Route</h2>
+    <h1>Route Comparison Results</h1>
+
+    <div class="container">
+
+        <!-- Diesel Route Box -->
+        <div class="box">
+            <h2>Diesel Truck Route</h2>
             <iframe src="{{ url_for('static', filename='diesel_map.html') }}"></iframe>
-            <div class="mileage">Total Diesel Mileage: {{ diesel_miles }} mi</div>
+            
+            <div class="info">Total Mileage: {{ diesel_miles }} mi</div>
+            <div class="info">Truck MPG: {{ mpg }} mpg</div>
+            <div class="info">Annual Trips: {{ annual_trips or 'N/A' }}</div>
+            
+            <div class="info">Total Cost: <span style="color:#555;">(coming soon)</span></div>
+            <div class="info">Total Emissions: <span style="color:#555;">(coming soon)</span></div>
         </div>
 
-        <div class="map-box">
-            <h2>EV Route</h2>
+        <!-- EV Route Box -->
+        <div class="box">
+            <h2>EV Truck Route</h2>
             <iframe src="{{ url_for('static', filename='ev_map.html') }}"></iframe>
+
             {% if ev_unavailable %}
                 <div class="error">EV Route Not Possible</div>
             {% else %}
-                <div class="mileage">Total EV Mileage: {{ ev_miles }} mi</div>
+                <div class="info">Total Mileage: {{ ev_miles }} mi</div>
+                <div class="info">Truck MPG: <span style="color:#555;">N/A (EV)</span></div>
+                <div class="info">Annual Trips: {{ annual_trips or 'N/A' }}</div>
+                
+                <div class="info">Total Cost: <span style="color:#555;">(coming soon)</span></div>
+                <div class="info">Total Emissions: <span style="color:#555;">(coming soon)</span></div>
             {% endif %}
         </div>
-    </div>
 
-    <div class="summary-box">
-        <div class="mpg">Truck MPG: {{ mpg }} miles/gallon</div>
-        <div class="cost">Total Cost: <span style="color:#555;">(calculations coming soon)</span></div>
-        <div class="emissions">Total Emissions: <span style="color:#555;">(calculations coming soon)</span></div>
     </div>
 
     <div class="back-link">
         <a href="{{ url_for('index') }}">← Generate Another Route</a>
     </div>
+
 </body>
 </html>

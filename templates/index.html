@@ -2,72 +2,90 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Route Mapper</title>
+    <title>Echo Route Mapper</title>
+    <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Roboto:wght@400;700&display=swap">
     <style>
         body {
-            font-family: Arial, sans-serif;
-            background-color: #f9f9f9;
-            text-align: center;
+            font-family: 'Roboto', sans-serif;
+            background-color: #ffffff;
+            color: #002f6c; /* Echo navy blue */
+            margin: 0;
             padding: 50px;
+            text-align: center;
+        }
+
+        h1 {
+            font-size: 36px;
+            font-weight: bold;
+            margin-bottom: 30px;
         }
 
         form {
-            background-color: #ffffff;
+            background-color: #f8f9fa;
             display: inline-block;
-            padding: 20px;
+            padding: 30px;
             border-radius: 8px;
-            box-shadow: 0 4px 8px rgba(0,0,0,0.1);
-        }
-
-        input[type="text"], input[type="number"] {
-            width: 80%;
-            padding: 8px;
-            margin: 10px 0;
-            border-radius: 4px;
-            border: 1px solid #ccc;
-        }
-
-        button {
-            background-color: #4CAF50;
-            color: white;
-            padding: 10px 20px;
-            border: none;
-            border-radius: 4px;
-            cursor: pointer;
-            margin-top: 15px;
-        }
-
-        button:hover {
-            background-color: #45a049;
+            box-shadow: 0 6px 12px rgba(0,0,0,0.1);
+            text-align: left;
+            max-width: 450px;
+            width: 100%;
         }
 
         label {
             font-weight: bold;
+            display: block;
+            margin-bottom: 6px;
+        }
+
+        input[type="text"], input[type="number"] {
+            width: 100%;
+            padding: 10px;
+            margin-bottom: 18px;
+            border-radius: 4px;
+            border: 1px solid #ccc;
+            box-sizing: border-box;
         }
 
         .optional {
             font-size: 12px;
             color: #777;
+            font-weight: normal;
+        }
+
+        button {
+            background-color: #4CAF50; /* Echo green */
+            color: white;
+            font-size: 16px;
+            padding: 12px 20px;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            width: 100%;
+        }
+
+        button:hover {
+            background-color: #3d8c40;
         }
     </style>
 </head>
 <body>
 
-    <h1>EV vs Diesel Route Mapper</h1>
+    <h1>Echo Route Mapper</h1>
 
     <form action="/result" method="POST">
-        <label for="start">Start Location:</label><br>
-        <input type="text" id="start" name="start" placeholder="e.g., Champaign, IL" required><br>
+        <label for="start">Start Location</label>
+        <input type="text" id="start" name="start" placeholder="e.g., Champaign, IL" required>
 
-        <label for="end">End Location:</label><br>
-        <input type="text" id="end" name="end" placeholder="e.g., Chicago, IL" required><br>
+        <label for="end">End Location</label>
+        <input type="text" id="end" name="end" placeholder="e.g., Chicago, IL" required>
 
-        <label for="mpg">Truck MPG <span class="optional">(optional, defaults to 9 mpg)</span>:</label><br>
-        <input type="number" step="0.1" id="mpg" name="mpg" placeholder="e.g., 9.0"><br>
+        <label for="mpg">Truck MPG <span class="optional">(optional, defaults to 9 mpg)</span></label>
+        <input type="number" step="0.1" id="mpg" name="mpg" placeholder="e.g., 9.0">
+
+        <label for="annual_trips">Annual Trips <span class="optional">(optional)</span></label>
+        <input type="number" id="annual_trips" name="annual_trips" placeholder="e.g., 150">
 
         <button type="submit">Calculate Route</button>
     </form>
 
-</body>
-</html>
+</body
