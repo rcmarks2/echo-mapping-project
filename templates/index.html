@@ -1,80 +1,73 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8">
-  <title>Echo Mapping Tool</title>
-  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Roboto:wght@400;700&display=swap">
-  <style>
-    body {
-      font-family: 'Roboto', sans-serif;
-      background-color: #f7f9fb;
-      margin: 0;
-      padding: 0;
-    }
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Route Mapper</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            background-color: #f9f9f9;
+            text-align: center;
+            padding: 50px;
+        }
 
-    .header {
-      background-color: #003f5c;
-      color: white;
-      padding: 20px;
-      text-align: center;
-      font-size: 28px;
-      font-weight: bold;
-    }
+        form {
+            background-color: #ffffff;
+            display: inline-block;
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+        }
 
-    .form-container {
-      max-width: 600px;
-      margin: 60px auto;
-      background: white;
-      padding: 40px;
-      border-radius: 10px;
-      box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
-    }
+        input[type="text"], input[type="number"] {
+            width: 80%;
+            padding: 8px;
+            margin: 10px 0;
+            border-radius: 4px;
+            border: 1px solid #ccc;
+        }
 
-    input[type="text"] {
-      width: 100%;
-      padding: 12px;
-      margin-top: 10px;
-      margin-bottom: 30px;
-      border: 1px solid #ccc;
-      border-radius: 6px;
-      font-size: 16px;
-    }
+        button {
+            background-color: #4CAF50;
+            color: white;
+            padding: 10px 20px;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            margin-top: 15px;
+        }
 
-    input[type="submit"] {
-      background-color: #0077c8;
-      color: white;
-      padding: 12px 20px;
-      border: none;
-      border-radius: 6px;
-      font-size: 16px;
-      cursor: pointer;
-    }
+        button:hover {
+            background-color: #45a049;
+        }
 
-    input[type="submit"]:hover {
-      background-color: #005fa3;
-    }
+        label {
+            font-weight: bold;
+        }
 
-    .logo {
-      position: absolute;
-      top: 20px;
-      right: 20px;
-      height: 40px;
-    }
-  </style>
+        .optional {
+            font-size: 12px;
+            color: #777;
+        }
+    </style>
 </head>
 <body>
-  <img src="{{ url_for('static', filename='logo.png') }}" class="logo" alt="Echo Logo">
-  <div class="header">Echo EV vs Diesel Route Tool</div>
-  <div class="form-container">
-    <form method="POST" action="/result">
-      <label for="start">Enter starting city and state (e.g., Phoenix, AZ):</label>
-      <input type="text" name="start" required>
 
-      <label for="end">Enter destination city and state (e.g., Omaha, NE):</label>
-      <input type="text" name="end" required>
+    <h1>EV vs Diesel Route Mapper</h1>
 
-      <input type="submit" value="Generate Routes">
+    <form action="/result" method="POST">
+        <label for="start">Start Location:</label><br>
+        <input type="text" id="start" name="start" placeholder="e.g., Champaign, IL" required><br>
+
+        <label for="end">End Location:</label><br>
+        <input type="text" id="end" name="end" placeholder="e.g., Chicago, IL" required><br>
+
+        <label for="mpg">Truck MPG <span class="optional">(optional, defaults to 9 mpg)</span>:</label><br>
+        <input type="number" step="0.1" id="mpg" name="mpg" placeholder="e.g., 9.0"><br>
+
+        <button type="submit">Calculate Route</button>
     </form>
-  </div>
+
 </body>
 </html>
