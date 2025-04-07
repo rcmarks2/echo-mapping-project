@@ -129,8 +129,12 @@
             <div class="info">Truck MPG: <span>{{ mpg }} mpg</span></div>
             <div class="info">Annual Trips: <span>{{ annual_trips or 'N/A' }}</span></div>
 
-            <div class="info">Annual Total Cost: <span>(calculations coming soon)</span></div>
-            <div class="info">Annual Total Emissions: <span>(calculations coming soon)</span></div>
+            <div class="info">Average Diesel Price: <span>${{ diesel_price }} / gal</span></div>
+            <div class="info">Annual Fuel Cost: <span>${{ fuel_cost }}</span></div>
+            <div class="info">Annual Maintenance Cost: <span>${{ maintenance_cost }}</span></div>
+            <div class="info">Annual Depreciation Cost: <span>${{ depreciation_cost }}</span></div>
+            <div class="info"><strong>Total Annual Cost: <span style="color: #002f6c;">${{ total_cost }}</span></strong></div>
+            <div class="info">Annual CO₂ Emissions: <span>{{ emissions }} lbs</span></div>
         </div>
 
         <!-- EV Route Box -->
@@ -146,7 +150,7 @@
                 <div class="info">Annual Trips: <span>{{ annual_trips or 'N/A' }}</span></div>
 
                 <div class="info">Annual Total Cost: <span>(calculations coming soon)</span></div>
-                <div class="info">Annual Total Emissions: <span>(calculations coming soon)</span></div>
+                <div class="info">Annual CO₂ Emissions: <span>(calculations coming soon)</span></div>
             {% endif %}
         </div>
 
