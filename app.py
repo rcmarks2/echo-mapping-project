@@ -39,6 +39,10 @@ def check_ev_feasibility(start, end, max_leg=225):
         current = midpoint
     return True
 
+@app.route("/")
+def index():
+    return render_template("index.html")
+
 @app.route("/batch-result", methods=["POST"])
 def batch_result():
     file = request.files["excel"]

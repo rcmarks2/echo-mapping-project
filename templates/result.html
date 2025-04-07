@@ -2,21 +2,20 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <title>Echo Route Results</title>
+    <title>Route Results - Echo Route Planner</title>
     <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@400;700&display=swap" rel="stylesheet">
     <style>
         body {
             font-family: 'Roboto', sans-serif;
-            background-color: #ffffff;
-            color: #002f6c;
+            background-color: #f4f7f9;
             margin: 0;
             padding: 0;
-            position: relative;
+            color: #002f6c;
         }
 
         .header {
             background-color: #002f6c;
-            color: #ffffff;
+            color: #fff;
             padding: 25px;
             text-align: center;
             position: relative;
@@ -24,7 +23,7 @@
 
         .header img.echo-logo {
             position: absolute;
-            right: 20px;
+            right: 25px;
             top: 50%;
             transform: translateY(-50%);
             height: 50px;
@@ -36,76 +35,89 @@
         }
 
         .container {
+            max-width: 1000px;
+            margin: 40px auto;
+            padding: 30px;
+            background-color: #ffffff;
+            border-radius: 8px;
+            box-shadow: 0 6px 12px rgba(0,0,0,0.1);
+        }
+
+        .maps-container {
             display: flex;
-            justify-content: space-around;
+            justify-content: space-between;
+            gap: 40px;
             flex-wrap: wrap;
+        }
+
+        .map-box {
+            flex: 1;
+            min-width: 45%;
+            background-color: white;
+            border: 2px solid #1a1a1a;
+            box-shadow: 2px 2px 10px rgba(0,0,0,0.1);
             padding: 20px;
         }
 
-        .box {
-            background-color: #f8f9fa;
-            border-radius: 8px;
-            box-shadow: 0 6px 12px rgba(0,0,0,0.1);
-            padding: 15px;
-            width: 48%;
-            box-sizing: border-box;
-            margin-bottom: 25px;
+        .map-box h2 {
+            text-align: center;
+            margin-bottom: 15px;
+            color: #1a1a1a;
         }
 
-        iframe {
+        .map-box iframe {
             width: 100%;
-            height: 400px;
+            height: 500px;
             border: none;
-            border-radius: 6px;
         }
 
-        h2 {
-            color: #002f6c;
-            margin-bottom: 10px;
-        }
-
-        .info {
-            font-weight: bold;
-            margin-top: 12px;
+        .stats {
+            text-align: center;
+            margin-top: 15px;
+            font-size: 16px;
             color: #333;
         }
 
-        .info span {
-            font-weight: normal;
-            color: #555;
-        }
-
-        .back-link {
+        .error {
             text-align: center;
-            margin: 30px;
-        }
-
-        .back-link a {
-            color: #4CAF50;
-            text-decoration: none;
+            color: red;
             font-weight: bold;
-        }
-
-        .back-link a:hover {
-            text-decoration: underline;
+            font-size: 20px;
+            margin-top: 10px;
         }
 
         .download-link {
             text-align: center;
-            margin-top: 20px;
+            margin-top: 40px;
         }
 
         .download-link a {
-            text-decoration: none;
-            font-weight: bold;
+            display: inline-block;
             background-color: #4CAF50;
             color: white;
-            padding: 10px 18px;
+            padding: 12px 20px;
+            text-decoration: none;
             border-radius: 6px;
+            font-weight: bold;
         }
 
         .download-link a:hover {
             background-color: #3d8c40;
+        }
+
+        .back-link {
+            text-align: center;
+            margin-top: 20px;
+        }
+
+        .back-link a {
+            text-decoration: none;
+            font-weight: bold;
+            color: #007bff;
+        }
+
+        .back-link a:hover {
+            text-decoration: underline;
         }
 
         .uiuc-logo {
@@ -116,8 +128,9 @@
         }
 
         @media (max-width: 900px) {
-            .box {
-                width: 100%;
+            .maps-container {
+                flex-direction: column;
+                align-items: center;
             }
         }
     </style>
@@ -130,41 +143,45 @@
     </div>
 
     <div class="container">
-        <!-- Diesel Route Box -->
-        <div class="box">
-            <h2>Diesel Truck Route</h2>
-            <iframe src="{{ url_for('static', filename='diesel_map.html') }}"></iframe>
+        <div class="maps-container">
+            <!-- Diesel Map -->
+            <div class="map-box">
+                <h2>Diesel Route</h2>
+                <iframe src="{{ url_for('static', filename='diesel_map.html') }}"></iframe>
+                <div class="stats">
+                    <p><strong>Route Mileage:</strong> {{ diesel_miles }} mi</p>
+                    <p><strong>Annual Trips:</strong> {{ annual_trips }}</p>
+                    <p><strong>Annual Mileage:</strong> {{ diesel_annual_miles }} mi</p>
+                    <p><strong>Total Annual Cost:</strong> ${{ diesel_total_cost }}</p>
+                    <p><strong>Annual Emissions:</strong> {{ diesel_emissions }} metric tons CO₂</p>
+                </div>
+            </div>
 
-            <div class="info">Route Mileage: <span>{{ diesel_miles }} mi</span></div>
-            <div class="info">Annual Trips: <span>{{ annual_trips }}</span></div>
-            <div class="info">Annual Route Mileage: <span>{{ annual_miles_diesel }} mi</span></div>
-            <div class="info">Total Annual Cost: <span>${{ total_cost_diesel }}</span></div>
-            <div class="info">Annual CO₂ Emissions: <span>{{ emissions_diesel }} metric tons</span></div>
+            <!-- EV Map -->
+            <div class="map-box">
+                <h2>EV Route</h2>
+                <iframe src="{{ url_for('static', filename='ev_map.html') }}"></iframe>
+                {% if ev_unavailable %}
+                    <div class="error">EV Route Not Possible</div>
+                {% else %}
+                    <div class="stats">
+                        <p><strong>Route Mileage:</strong> {{ ev_miles }} mi</p>
+                        <p><strong>Annual Trips:</strong> {{ annual_trips }}</p>
+                        <p><strong>Annual Mileage:</strong> {{ ev_annual_miles }} mi</p>
+                        <p><strong>Total Annual Cost:</strong> ${{ ev_total_cost }}</p>
+                        <p><strong>Annual Emissions:</strong> {{ ev_emissions }} metric tons CO₂</p>
+                    </div>
+                {% endif %}
+            </div>
         </div>
 
-        <!-- EV Route Box -->
-        <div class="box">
-            <h2>EV Truck Route</h2>
-            <iframe src="{{ url_for('static', filename='ev_map.html') }}"></iframe>
-
-            {% if ev_unavailable %}
-                <div class="info" style="color: red;">EV Route Not Possible</div>
-            {% else %}
-                <div class="info">Route Mileage: <span>{{ ev_miles }} mi</span></div>
-                <div class="info">Annual Trips: <span>{{ annual_trips }}</span></div>
-                <div class="info">Annual Route Mileage: <span>{{ annual_miles_ev }} mi</span></div>
-                <div class="info">Total Annual Cost: <span>${{ total_cost_ev }}</span></div>
-                <div class="info">Annual CO₂ Emissions: <span>{{ emissions_ev }} metric tons</span></div>
-            {% endif %}
+        <div class="download-link">
+            <a href="{{ url_for('download') }}">Download Full Calculation Details (.xlsx)</a>
         </div>
-    </div>
 
-    <div class="download-link">
-        <a href="{{ url_for('download') }}">Download Full Cost Breakdown</a>
-    </div>
-
-    <div class="back-link">
-        <a href="{{ url_for('index') }}">← Generate Another Route</a>
+        <div class="back-link">
+            <p><a href="{{ url_for('index') }}">← Plan Another Route</a></p>
+        </div>
     </div>
 
     <img src="{{ url_for('static', filename='uiuc_logo.png') }}" alt="UIUC Logo" class="uiuc-logo">
