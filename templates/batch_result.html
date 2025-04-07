@@ -84,7 +84,34 @@
             left: 15px;
             height: 50px;
         }
+
+        .spinner {
+            border: 6px solid #f3f3f3;
+            border-top: 6px solid #4CAF50;
+            border-radius: 50%;
+            width: 50px;
+            height: 50px;
+            animation: spin 1s linear infinite;
+            margin: 20px auto;
+        }
+
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+
+        #loading {
+            display: none;
+            font-size: 18px;
+            color: #666;
+        }
     </style>
+    <script>
+        window.onload = function () {
+            document.getElementById("loading").style.display = "none";
+            document.getElementById("loaded").style.display = "block";
+        };
+    </script>
 </head>
 <body>
 
@@ -94,11 +121,18 @@
     </div>
 
     <div class="container">
-        <p><strong>{{ count }}</strong> routes successfully processed.</p>
-        <a class="download-button" href="{{ url_for('download_batch') }}">Download Results (.xlsx)</a>
+        <div id="loading">
+            <div class="spinner"></div>
+            <p>Processing routes... Please wait.</p>
+        </div>
 
-        <div class="back-link">
-            <p><a href="{{ url_for('index') }}">← Plan Another Route</a></p>
+        <div id="loaded" style="display: none;">
+            <p><strong>{{ count }}</strong> routes successfully processed.</p>
+            <a class="download-button" href="{{ url_for('download_batch') }}">Download Results (.xlsx)</a>
+
+            <div class="back-link">
+                <p><a href="{{ url_for('index') }}">← Plan Another Route</a></p>
+            </div>
         </div>
     </div>
 

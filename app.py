@@ -5,6 +5,7 @@ from geopy.distance import geodesic
 import pandas as pd
 import requests
 import os
+import time
 
 app = Flask(__name__)
 geolocator = Nominatim(user_agent="route_mapper")
@@ -20,11 +21,16 @@ def get_average_diesel_price():
     except:
         return 3.592
 
-def geocode_city_state(city, state):
-    location = geolocator.geocode(f"{city}, {state}", timeout=10)
-    if not location:
-        raise ValueError(f"Could not geocode city/state: {city}, {state}")
-    return (location.latitude, location.longitude)
+def geocode_city_state(city, state, row_num):
+    try:
+        print(f"Geocoding start location for row {row_num}: {city}, {state}")
+        location = geolocator.geocode(f"{city}, {state}", timeout=10)
+        if not location:
+            raise ValueError(f"Could not geocode city/state: {city}, {state}")
+        return (location.latitude, location.longitude)
+    except Exception as e:
+        print(f"[ERROR] Row {row_num} geocoding failed: {e}")
+        raise
 
 def calculate_distance(a, b):
     return geodesic(a, b).miles
@@ -60,6 +66,9 @@ def batch_result():
 
     for index, row in df.iterrows():
         try:
+            row_num = index + 2  # Excel row number (including header)
+            print(f"\n--- Processing Row {row_num} ---")
+
             start_city = row["Start City"]
             start_state = row["Start State"]
             end_city = row["Destination City"]
@@ -68,10 +77,14 @@ def batch_result():
             trips = int(row["Annual Trips (Minimum 1)"])
 
             if trips < 1:
-                return f"<h2>Error: Row {index+2} has Annual Trips less than 1.</h2>"
+                print(f"[ERROR] Row {row_num} has Annual Trips < 1. Skipping.")
+                continue
 
-            start_coord = geocode_city_state(start_city, start_state)
-            end_coord = geocode_city_state(end_city, end_state)
+            start_coord = geocode_city_state(start_city, start_state, row_num)
+            time.sleep(1)
+            end_coord = geocode_city_state(end_city, end_state, row_num)
+            time.sleep(1)
+
             miles = calculate_distance(start_coord, end_coord)
             annual_miles = miles * trips
 
@@ -110,7 +123,8 @@ def batch_result():
             })
 
         except Exception as e:
-            return f"<h2>Error processing row {index+2}: {str(e)}</h2>"
+            print(f"[SKIPPED] Row {row_num} due to error: {e}")
+            continue
 
     result_df = pd.DataFrame(output_rows)
     result_path = "static/route_results_batch.xlsx"
