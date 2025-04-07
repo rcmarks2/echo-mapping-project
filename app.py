@@ -18,12 +18,12 @@ def get_average_diesel_price():
         data = response.json()
         return float(data['series'][0]['data'][0][1])
     except:
-        return 3.592  # fallback price
+        return 3.592
 
-def geocode_city(city_name):
-    location = geolocator.geocode(city_name, timeout=10)
+def geocode_city_state(city, state):
+    location = geolocator.geocode(f"{city}, {state}", timeout=10)
     if not location:
-        raise ValueError(f"Could not geocode city: {city_name}")
+        raise ValueError(f"Could not geocode city/state: {city}, {state}")
     return (location.latitude, location.longitude)
 
 def calculate_distance(a, b):
@@ -44,7 +44,9 @@ def batch_result():
     file = request.files["excel"]
     df = pd.read_excel(file)
 
-    required_columns = ["Start City", "End City", "Annual Trips"]
+    required_columns = [
+        "Start City", "Start State", "Destination City", "Destination State", "Annual Trips (Minimum 1)"
+    ]
     for col in required_columns:
         if col not in df.columns:
             return f"<h2>Missing required column: {col}</h2>"
@@ -53,17 +55,19 @@ def batch_result():
     diesel_price = get_average_diesel_price()
 
     for index, row in df.iterrows():
-        start_city = row["Start City"]
-        end_city = row["End City"]
-        mpg = float(row.get("MP (Optional Will Default to 9)", 9.0)) if pd.notna(row.get("MP (Optional Will Default to 9)", 9.0)) else 9.0
-        trips = int(row["Annual Trips"])
-
-        if trips < 1:
-            return f"<h2>Error: Row {index+2} has Annual Trips less than 1.</h2>"
-
         try:
-            start_coord = geocode_city(start_city)
-            end_coord = geocode_city(end_city)
+            start_city = row["Start City"]
+            start_state = row["Start State"]
+            end_city = row["Destination City"]
+            end_state = row["Destination State"]
+            mpg = float(row.get("MPG (Will Default To 9)", 9.0)) if pd.notna(row.get("MPG (Will Default To 9)", 9.0)) else 9.0
+            trips = int(row["Annual Trips (Minimum 1)"])
+
+            if trips < 1:
+                return f"<h2>Error: Row {index+2} has Annual Trips less than 1.</h2>"
+
+            start_coord = geocode_city_state(start_city, start_state)
+            end_coord = geocode_city_state(end_city, end_state)
             miles = calculate_distance(start_coord, end_coord)
             annual_miles = miles * trips
 
@@ -87,7 +91,9 @@ def batch_result():
 
             output_rows.append({
                 "Start City": start_city,
-                "End City": end_city,
+                "Start State": start_state,
+                "Destination City": end_city,
+                "Destination State": end_state,
                 "MPG Used": mpg,
                 "Diesel Miles": round(miles, 1),
                 "Annual Trips": trips,
@@ -95,8 +101,8 @@ def batch_result():
                 "EV Feasible": "Yes" if ev_feasible else "No",
                 "Diesel Cost ($)": round(diesel_total_cost, 2),
                 "Diesel Emissions (MT)": round(diesel_emissions, 2),
-                "EV Cost ($)": round(ev_total_cost, 2) if ev_feasible else "N/A",
-                "EV Emissions (MT)": round(ev_emissions, 2) if ev_feasible else "N/A"
+                "EV Cost ($)": round(ev_total_cost, 2) if ev_feasible != "N/A" else "N/A",
+                "EV Emissions (MT)": round(ev_emissions, 2) if ev_feasible != "N/A" else "N/A"
             })
 
         except Exception as e:
