@@ -37,7 +37,7 @@ def get_average_diesel_price():
         price = float(data['series'][0]['data'][0][1])
         return price
     except:
-        return 3.592
+        return 3.592  # fallback average
 
 def geocode_location(location):
     loc = geolocator.geocode(location, timeout=10)
@@ -150,7 +150,7 @@ def result():
         diesel_price = get_average_diesel_price()
         diesel_annual_miles = diesel_miles * annual_trips
         diesel_fuel_cost = annual_trips * (diesel_miles / mpg) * diesel_price if annual_trips else 0
-        diesel_maintenance = diesel_miles * (17500 / (diesel_miles * annual_trips)) if annual_trips else 0
+        diesel_maintenance = diesel_miles * (17500 / diesel_annual_miles) if annual_trips else 0
         diesel_depreciation = diesel_miles * (16600 / 750000)
         diesel_total_cost = diesel_fuel_cost + diesel_maintenance + diesel_depreciation
         diesel_emissions = (diesel_annual_miles * 1.617) / 1000
@@ -158,18 +158,29 @@ def result():
         if not ev_unavailable:
             ev_annual_miles = ev_miles * annual_trips
             ev_fuel_cost = (ev_annual_miles / 20.39) * 2.208
-            ev_maintenance = ev_annual_miles * (10500 / ev_annual_miles) if annual_trips else 0
+            ev_maintenance = ev_miles * (10500 / ev_annual_miles) if annual_trips else 0
             ev_depreciation = ev_annual_miles * (250000 / 750000)
             ev_total_cost = ev_fuel_cost + ev_maintenance + ev_depreciation
             ev_emissions = (ev_annual_miles * 0.2102) / 1000
         else:
             ev_annual_miles = ev_total_cost = ev_emissions = 0
+            ev_fuel_cost = ev_maintenance = ev_depreciation = 0
 
         with open("static/calculations.txt", "w") as f:
+            f.write("=== CALCULATION CONSTANTS ===\n")
+            f.write(f"MPG used: {mpg}\n")
+            f.write(f"Diesel Price Used: ${diesel_price:.3f}/gal\n")
+            f.write(f"Diesel Maintenance = one trip * (17500 / annual miles)\n")
+            f.write(f"EV Maintenance = one trip * (10500 / annual miles)\n")
+            f.write(f"EV Battery Cost = (miles / 20.39) * 2.208\n")
+            f.write(f"Diesel Emissions: 1.617 kg/mile | EV Emissions: 0.2102 kg/mile\n")
+            f.write(f"Depreciation (Diesel): 16600/750000 | Depreciation (EV): 250000/750000\n\n")
+
             f.write("=== DIESEL TRUCK ===\n")
             f.write(f"Route Mileage: {diesel_miles} mi\nAnnual Trips: {annual_trips}\nAnnual Mileage: {diesel_annual_miles} mi\n")
             f.write(f"Fuel Cost: ${diesel_fuel_cost:.2f}\nMaintenance: ${diesel_maintenance:.2f}\nDepreciation: ${diesel_depreciation:.2f}\n")
             f.write(f"Total Cost: ${diesel_total_cost:.2f}\nEmissions: {diesel_emissions:.2f} metric tons\n\n")
+
             f.write("=== EV TRUCK ===\n")
             f.write(f"Route Mileage: {ev_miles} mi\nAnnual Trips: {annual_trips}\nAnnual Mileage: {ev_annual_miles} mi\n")
             f.write(f"Fuel Cost: ${ev_fuel_cost:.2f}\nMaintenance: ${ev_maintenance:.2f}\nDepreciation: ${ev_depreciation:.2f}\n")
