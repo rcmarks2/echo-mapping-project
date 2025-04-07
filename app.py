@@ -37,7 +37,7 @@ def get_average_diesel_price():
         price = float(data['series'][0]['data'][0][1])
         return price
     except:
-        return 3.592  # Fallback if API fails
+        return 3.592
 
 def geocode_location(location):
     loc = geolocator.geocode(location, timeout=10)
@@ -108,7 +108,6 @@ def result():
         start_label = format_label(start_raw)
         end_label = format_label(end_raw)
 
-        # Diesel route
         diesel_coords = (start_coord[::-1], end_coord[::-1])
         diesel_route = client.directions(diesel_coords, profile='driving-hgv', format='geojson')
         diesel_distance_km = diesel_route['features'][0]['properties']['segments'][0]['distance']
@@ -120,7 +119,6 @@ def result():
         create_marker(diesel_map, end_coord, end_label)
         diesel_map.save("static/diesel_map.html")
 
-        # EV route
         ev_map = folium.Map(location=start_coord, zoom_start=6, tiles="CartoDB positron")
         create_marker(ev_map, start_coord, start_label)
         create_marker(ev_map, end_coord, end_label)
@@ -149,39 +147,49 @@ def result():
 
         ev_map.save("static/ev_map.html")
 
-        # Diesel Calculations
+        # === Diesel Calculations ===
         diesel_price = get_average_diesel_price()
-        annual_miles = diesel_miles * annual_trips
+        diesel_annual_miles = diesel_miles * annual_trips
 
-        fuel_cost = annual_trips * (diesel_miles / mpg) * diesel_price if annual_trips else 0
-        maintenance_cost = diesel_miles * (17500 / (diesel_miles * annual_trips)) if annual_trips else 0
-        depreciation_cost = diesel_miles * (16600 / 750000)
-        total_annual_cost = fuel_cost + maintenance_cost + depreciation_cost
+        diesel_fuel_cost = annual_trips * (diesel_miles / mpg) * diesel_price if annual_trips else 0
+        diesel_maintenance = diesel_miles * (17500 / (diesel_miles * annual_trips)) if annual_trips else 0
+        diesel_depreciation = diesel_miles * (16600 / 750000)
+        diesel_total_cost = diesel_fuel_cost + diesel_maintenance + diesel_depreciation
+        diesel_emissions = (diesel_annual_miles * 1.617) / 1000
 
-        emissions_kg = annual_miles * 1.617  # kg
-        emissions_metric_tons = emissions_kg / 1000  # to metric tons
+        # === EV Calculations ===
+        if not ev_unavailable:
+            ev_annual_miles = ev_miles * annual_trips
+            ev_fuel_cost = (ev_annual_miles / 20.39) * 2.208
+            ev_maintenance = ev_annual_miles * (10500 / ev_annual_miles) if annual_trips else 0
+            ev_depreciation = ev_annual_miles * (250000 / 750000)
+            ev_total_cost = ev_fuel_cost + ev_maintenance + ev_depreciation
+            ev_emissions = (ev_annual_miles * 0.2102) / 1000
+        else:
+            ev_annual_miles = ev_total_cost = ev_emissions = 0
 
-        # Save calculations to .txt
+        # === Save Breakdown ===
         with open("static/calculations.txt", "w") as f:
-            f.write(f"Diesel Route: {diesel_miles} miles\n")
-            f.write(f"Annual Trips: {annual_trips}\n")
-            f.write(f"Annual Miles: {annual_miles}\n")
-            f.write(f"MPG Used: {mpg}\n")
-            f.write(f"Diesel Price: ${diesel_price}/gal\n")
-            f.write(f"Fuel Cost: ${fuel_cost:.2f}\n")
-            f.write(f"Maintenance Cost: ${maintenance_cost:.2f}\n")
-            f.write(f"Depreciation Cost: ${depreciation_cost:.2f}\n")
-            f.write(f"Total Annual Cost: ${total_annual_cost:.2f}\n")
-            f.write(f"Annual CO2 Emissions: {emissions_metric_tons:.2f} metric tons\n")
+            f.write("=== DIESEL TRUCK ===\n")
+            f.write(f"Route Mileage: {diesel_miles} mi\nAnnual Trips: {annual_trips}\nAnnual Mileage: {diesel_annual_miles} mi\n")
+            f.write(f"Fuel Cost: ${diesel_fuel_cost:.2f}\nMaintenance: ${diesel_maintenance:.2f}\nDepreciation: ${diesel_depreciation:.2f}\n")
+            f.write(f"Total Cost: ${diesel_total_cost:.2f}\nEmissions: {diesel_emissions:.2f} metric tons\n\n")
+            f.write("=== EV TRUCK ===\n")
+            f.write(f"Route Mileage: {ev_miles} mi\nAnnual Trips: {annual_trips}\nAnnual Mileage: {ev_annual_miles} mi\n")
+            f.write(f"Fuel Cost: ${ev_fuel_cost:.2f}\nMaintenance: ${ev_maintenance:.2f}\nDepreciation: ${ev_depreciation:.2f}\n")
+            f.write(f"Total Cost: ${ev_total_cost:.2f}\nEmissions: {ev_emissions:.2f} metric tons\n")
 
         return render_template("result.html",
                                diesel_miles=diesel_miles,
                                ev_miles=ev_miles,
                                ev_unavailable=ev_unavailable,
                                annual_trips=annual_trips,
-                               annual_miles=annual_miles,
-                               total_cost=round(total_annual_cost, 2),
-                               emissions=round(emissions_metric_tons, 2))
+                               annual_miles_diesel=diesel_annual_miles,
+                               total_cost_diesel=round(diesel_total_cost, 2),
+                               emissions_diesel=round(diesel_emissions, 2),
+                               annual_miles_ev=ev_annual_miles,
+                               total_cost_ev=round(ev_total_cost, 2),
+                               emissions_ev=round(ev_emissions, 2))
 
     except Exception as e:
         return f"<h2>Route Error</h2><p>{e}</p>"

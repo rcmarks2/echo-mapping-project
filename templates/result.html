@@ -137,9 +137,9 @@
 
             <div class="info">Route Mileage: <span>{{ diesel_miles }} mi</span></div>
             <div class="info">Annual Trips: <span>{{ annual_trips }}</span></div>
-            <div class="info">Annual Route Mileage: <span>{{ annual_miles }} mi</span></div>
-            <div class="info">Total Annual Cost: <span>${{ total_cost }}</span></div>
-            <div class="info">Annual CO₂ Emissions: <span>{{ emissions }} metric tons</span></div>
+            <div class="info">Annual Route Mileage: <span>{{ annual_miles_diesel }} mi</span></div>
+            <div class="info">Total Annual Cost: <span>${{ total_cost_diesel }}</span></div>
+            <div class="info">Annual CO₂ Emissions: <span>{{ emissions_diesel }} metric tons</span></div>
         </div>
 
         <!-- EV Route Box -->
@@ -151,12 +151,16 @@
                 <div class="info" style="color: red;">EV Route Not Possible</div>
             {% else %}
                 <div class="info">Route Mileage: <span>{{ ev_miles }} mi</span></div>
+                <div class="info">Annual Trips: <span>{{ annual_trips }}</span></div>
+                <div class="info">Annual Route Mileage: <span>{{ annual_miles_ev }} mi</span></div>
+                <div class="info">Total Annual Cost: <span>${{ total_cost_ev }}</span></div>
+                <div class="info">Annual CO₂ Emissions: <span>{{ emissions_ev }} metric tons</span></div>
             {% endif %}
         </div>
     </div>
 
     <div class="download-link">
-        <a href="{{ url_for('download') }}">Download Full Diesel Cost Breakdown</a>
+        <a href="{{ url_for('download') }}">Download Full Cost Breakdown</a>
     </div>
 
     <div class="back-link">
