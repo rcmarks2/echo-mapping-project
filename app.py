@@ -147,17 +147,14 @@ def result():
 
         ev_map.save("static/ev_map.html")
 
-        # === Diesel Calculations ===
         diesel_price = get_average_diesel_price()
         diesel_annual_miles = diesel_miles * annual_trips
-
         diesel_fuel_cost = annual_trips * (diesel_miles / mpg) * diesel_price if annual_trips else 0
         diesel_maintenance = diesel_miles * (17500 / (diesel_miles * annual_trips)) if annual_trips else 0
         diesel_depreciation = diesel_miles * (16600 / 750000)
         diesel_total_cost = diesel_fuel_cost + diesel_maintenance + diesel_depreciation
         diesel_emissions = (diesel_annual_miles * 1.617) / 1000
 
-        # === EV Calculations ===
         if not ev_unavailable:
             ev_annual_miles = ev_miles * annual_trips
             ev_fuel_cost = (ev_annual_miles / 20.39) * 2.208
@@ -168,7 +165,6 @@ def result():
         else:
             ev_annual_miles = ev_total_cost = ev_emissions = 0
 
-        # === Save Breakdown ===
         with open("static/calculations.txt", "w") as f:
             f.write("=== DIESEL TRUCK ===\n")
             f.write(f"Route Mileage: {diesel_miles} mi\nAnnual Trips: {annual_trips}\nAnnual Mileage: {diesel_annual_miles} mi\n")
@@ -197,3 +193,7 @@ def result():
 @app.route("/download")
 def download():
     return send_file("static/calculations.txt", as_attachment=True)
+
+if __name__ == "__main__":
+    port = int(os.environ.get("PORT", 5000))
+    app.run(host="0.0.0.0", port=port)
