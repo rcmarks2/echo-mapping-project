@@ -2,6 +2,7 @@ from flask import Flask, render_template, request
 from openrouteservice import Client
 from geopy.geocoders import Nominatim
 from geopy.distance import geodesic
+import requests
 import folium
 import pandas as pd
 import os
@@ -9,6 +10,8 @@ import os
 app = Flask(__name__)
 geolocator = Nominatim(user_agent="route_mapper")
 client = Client(key=os.environ.get("ORS_API_KEY"))
+
+EIA_API_KEY = "gTCTiZrohnP58W0jSqnrvJECt308as0Ih350wX9Q"
 
 file_paths = [f"{i}.xlsx" for i in range(1, 8)]
 combined = pd.concat([pd.read_excel(f) for f in file_paths])
@@ -26,6 +29,16 @@ STATE_ABBR = {
     'South Dakota': 'SD', 'Tennessee': 'TN', 'Texas': 'TX', 'Utah': 'UT', 'Vermont': 'VT',
     'Virginia': 'VA', 'Washington': 'WA', 'West Virginia': 'WV', 'Wisconsin': 'WI', 'Wyoming': 'WY'
 }
+
+def get_average_diesel_price():
+    url = f'https://api.eia.gov/series/?api_key={EIA_API_KEY}&series_id=PET.EMD_EPD2D_PTE_NUS_DPG.W'
+    try:
+        response = requests.get(url)
+        data = response.json()
+        price = float(data['series'][0]['data'][0][1])
+        return price
+    except:
+        return 3.592  # Fallback value if API fails
 
 def geocode_location(location):
     loc = geolocator.geocode(location, timeout=10)
@@ -91,7 +104,7 @@ def result():
         annual_trips_input = request.form.get("annual_trips")
 
         mpg = float(mpg_input) if mpg_input else 9.0
-        annual_trips = int(annual_trips_input) if annual_trips_input else None
+        annual_trips = int(annual_trips_input) if annual_trips_input else 0
 
         start_coord, start_raw = geocode_location(start_input)
         end_coord, end_raw = geocode_location(end_input)
@@ -103,7 +116,7 @@ def result():
         diesel_coords = (start_coord[::-1], end_coord[::-1])
         diesel_route = client.directions(diesel_coords, profile='driving-hgv', format='geojson')
         diesel_distance_km = diesel_route['features'][0]['properties']['segments'][0]['distance']
-        diesel_distance = round(diesel_distance_km * 0.000621371, 1)
+        diesel_miles = round(diesel_distance_km * 0.000621371, 1)
 
         diesel_map = folium.Map(location=start_coord, zoom_start=6, tiles="CartoDB positron")
         folium.GeoJson(diesel_route, style_function=lambda x: {'color': '#002f6c', 'weight': 5}).add_to(diesel_map)
@@ -119,9 +132,9 @@ def result():
         for lat, lon in ev_coords:
             folium.CircleMarker((lat, lon), radius=6, color='#888888', fill=True).add_to(ev_map)
 
-        if diesel_distance <= 225:
+        if diesel_miles <= 225:
             folium.GeoJson(diesel_route, style_function=lambda x: {'color': '#002f6c', 'weight': 5}).add_to(ev_map)
-            ev_miles, ev_unavailable = diesel_distance, False
+            ev_miles, ev_unavailable = diesel_miles, False
         else:
             ev_path = build_ev_route(start_coord, end_coord)
             if ev_path:
@@ -132,23 +145,37 @@ def result():
                     folium.GeoJson(route_segment, style_function=lambda x: {'color': '#002f6c', 'weight': 5}).add_to(ev_map)
                     total_ev_distance += route_segment['features'][0]['properties']['segments'][0]['distance']
                 ev_miles = round(total_ev_distance * 0.000621371 + len(ev_path)-2, 1)
+                ev_unavailable = False
                 for charger in ev_path[1:-1]:
                     folium.CircleMarker(charger, radius=8, color='#4CAF50', fill=True).add_to(ev_map)
-                ev_unavailable = False
             else:
                 ev_miles, ev_unavailable = None, True
 
         ev_map.save("static/ev_map.html")
 
+        # Diesel-only calculations
+        diesel_price = get_average_diesel_price()
+        fuel_cost = annual_trips * (diesel_miles / mpg) * diesel_price if annual_trips else 0
+        maintenance_cost = diesel_miles * (17500 / (diesel_miles * annual_trips)) if annual_trips else 0
+        depreciation_cost = diesel_miles * (16600 / 750000)
+        total_annual_cost = fuel_cost + maintenance_cost + depreciation_cost
+        annual_emissions = annual_trips * diesel_miles * 1.617
+
         return render_template("result.html",
-                               diesel_miles=diesel_distance,
+                               diesel_miles=diesel_miles,
                                ev_miles=ev_miles,
                                ev_unavailable=ev_unavailable,
                                mpg=mpg,
-                               annual_trips=annual_trips)
+                               annual_trips=annual_trips,
+                               fuel_cost=round(fuel_cost, 2),
+                               maintenance_cost=round(maintenance_cost, 2),
+                               depreciation_cost=round(depreciation_cost, 2),
+                               total_cost=round(total_annual_cost, 2),
+                               emissions=round(annual_emissions, 2),
+                               diesel_price=round(diesel_price, 3))
 
     except Exception as e:
-        return f"<h2>Error</h2><p>{e}</p>"
+        return f"<h2>Route Error</h2><p>{e}</p>"
 
 if __name__ == "__main__":
     port = int(os.environ.get("PORT", 5000))
