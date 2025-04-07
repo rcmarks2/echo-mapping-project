@@ -1,6 +1,6 @@
 from flask import Flask, render_template, request, send_file
 from openrouteservice import Client
-from geopy.geocoders import Nominatim
+from geopy.geocoders import GoogleV3
 from geopy.distance import geodesic
 import pandas as pd
 import requests
@@ -8,9 +8,17 @@ import os
 import time
 
 app = Flask(__name__)
-geolocator = Nominatim(user_agent="route_mapper")
+
+# Initialize Google Maps geocoder
+google_api_key = "AIzaSyCIPvsZMeb_NtkuElOooPCE46fB-bJEULg"
+geolocator = GoogleV3(api_key=google_api_key, timeout=10)
+
+# OpenRouteService for driving distances
 client = Client(key=os.environ.get("ORS_API_KEY"))
 EIA_API_KEY = "gTCTiZrohnP58W0jSqnrvJECt308as0Ih350wX9Q"
+
+# Optional cache to speed up repeated geocoding
+geocode_cache = {}
 
 def get_average_diesel_price():
     try:
@@ -22,12 +30,18 @@ def get_average_diesel_price():
         return 3.592
 
 def geocode_city_state(city, state, row_num):
+    key = (city.strip().lower(), state.strip().lower())
+    if key in geocode_cache:
+        print(f"Row {row_num}: Geocode cache hit for {city}, {state}")
+        return geocode_cache[key]
     try:
-        print(f"Geocoding start location for row {row_num}: {city}, {state}")
-        location = geolocator.geocode(f"{city}, {state}", timeout=10)
+        print(f"Row {row_num}: Geocoding {city}, {state} using Google...")
+        location = geolocator.geocode(f"{city}, {state}")
         if not location:
-            raise ValueError(f"Could not geocode city/state: {city}, {state}")
-        return (location.latitude, location.longitude)
+            raise ValueError(f"Could not geocode: {city}, {state}")
+        coord = (location.latitude, location.longitude)
+        geocode_cache[key] = coord
+        return coord
     except Exception as e:
         print(f"[ERROR] Row {row_num} geocoding failed: {e}")
         raise
@@ -66,24 +80,29 @@ def batch_result():
 
     for index, row in df.iterrows():
         try:
-            row_num = index + 2  # Excel row number (including header)
+            row_num = index + 2  # Excel row number
             print(f"\n--- Processing Row {row_num} ---")
 
             start_city = row["Start City"]
             start_state = row["Start State"]
             end_city = row["Destination City"]
             end_state = row["Destination State"]
-            mpg = float(row.get("MPG (Will Default To 9)", 9.0)) if pd.notna(row.get("MPG (Will Default To 9)", 9.0)) else 9.0
-            trips = int(row["Annual Trips (Minimum 1)"])
 
+            mpg_raw = row.get("MPG (Will Default To 9)", "")
+            if pd.isna(mpg_raw) or str(mpg_raw).strip() == "":
+                mpg = 9.0
+                print(f"Row {row_num}: No MPG provided — defaulting to 9.0")
+            else:
+                mpg = float(mpg_raw)
+                print(f"Row {row_num}: MPG provided = {mpg}")
+
+            trips = int(row["Annual Trips (Minimum 1)"])
             if trips < 1:
                 print(f"[ERROR] Row {row_num} has Annual Trips < 1. Skipping.")
                 continue
 
             start_coord = geocode_city_state(start_city, start_state, row_num)
-            time.sleep(1)
             end_coord = geocode_city_state(end_city, end_state, row_num)
-            time.sleep(1)
 
             miles = calculate_distance(start_coord, end_coord)
             annual_miles = miles * trips
