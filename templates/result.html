@@ -75,13 +75,6 @@
             color: #555;
         }
 
-        .error {
-            color: red;
-            font-weight: bold;
-            margin-top: 15px;
-            font-size: 18px;
-        }
-
         .back-link {
             text-align: center;
             margin: 30px;
@@ -95,6 +88,24 @@
 
         .back-link a:hover {
             text-decoration: underline;
+        }
+
+        .download-link {
+            text-align: center;
+            margin-top: 20px;
+        }
+
+        .download-link a {
+            text-decoration: none;
+            font-weight: bold;
+            background-color: #4CAF50;
+            color: white;
+            padding: 10px 18px;
+            border-radius: 6px;
+        }
+
+        .download-link a:hover {
+            background-color: #3d8c40;
         }
 
         .uiuc-logo {
@@ -119,22 +130,16 @@
     </div>
 
     <div class="container">
-
         <!-- Diesel Route Box -->
         <div class="box">
             <h2>Diesel Truck Route</h2>
             <iframe src="{{ url_for('static', filename='diesel_map.html') }}"></iframe>
 
-            <div class="info">Total Mileage: <span>{{ diesel_miles }} mi</span></div>
-            <div class="info">Truck MPG: <span>{{ mpg }} mpg</span></div>
-            <div class="info">Annual Trips: <span>{{ annual_trips or 'N/A' }}</span></div>
-
-            <div class="info">Average Diesel Price: <span>${{ diesel_price }} / gal</span></div>
-            <div class="info">Annual Fuel Cost: <span>${{ fuel_cost }}</span></div>
-            <div class="info">Annual Maintenance Cost: <span>${{ maintenance_cost }}</span></div>
-            <div class="info">Annual Depreciation Cost: <span>${{ depreciation_cost }}</span></div>
-            <div class="info"><strong>Total Annual Cost: <span style="color: #002f6c;">${{ total_cost }}</span></strong></div>
-            <div class="info">Annual CO₂ Emissions: <span>{{ emissions }} lbs</span></div>
+            <div class="info">Route Mileage: <span>{{ diesel_miles }} mi</span></div>
+            <div class="info">Annual Trips: <span>{{ annual_trips }}</span></div>
+            <div class="info">Annual Route Mileage: <span>{{ annual_miles }} mi</span></div>
+            <div class="info">Total Annual Cost: <span>${{ total_cost }}</span></div>
+            <div class="info">Annual CO₂ Emissions: <span>{{ emissions }} metric tons</span></div>
         </div>
 
         <!-- EV Route Box -->
@@ -143,17 +148,15 @@
             <iframe src="{{ url_for('static', filename='ev_map.html') }}"></iframe>
 
             {% if ev_unavailable %}
-                <div class="error">EV Route Not Possible</div>
+                <div class="info" style="color: red;">EV Route Not Possible</div>
             {% else %}
-                <div class="info">Total Mileage: <span>{{ ev_miles }} mi</span></div>
-                <div class="info">Truck MPG: <span>N/A (EV)</span></div>
-                <div class="info">Annual Trips: <span>{{ annual_trips or 'N/A' }}</span></div>
-
-                <div class="info">Annual Total Cost: <span>(calculations coming soon)</span></div>
-                <div class="info">Annual CO₂ Emissions: <span>(calculations coming soon)</span></div>
+                <div class="info">Route Mileage: <span>{{ ev_miles }} mi</span></div>
             {% endif %}
         </div>
+    </div>
 
+    <div class="download-link">
+        <a href="{{ url_for('download') }}">Download Full Diesel Cost Breakdown</a>
     </div>
 
     <div class="back-link">

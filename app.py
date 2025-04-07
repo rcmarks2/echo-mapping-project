@@ -1,4 +1,4 @@
-from flask import Flask, render_template, request
+from flask import Flask, render_template, request, send_file
 from openrouteservice import Client
 from geopy.geocoders import Nominatim
 from geopy.distance import geodesic
@@ -10,7 +10,6 @@ import os
 app = Flask(__name__)
 geolocator = Nominatim(user_agent="route_mapper")
 client = Client(key=os.environ.get("ORS_API_KEY"))
-
 EIA_API_KEY = "gTCTiZrohnP58W0jSqnrvJECt308as0Ih350wX9Q"
 
 file_paths = [f"{i}.xlsx" for i in range(1, 8)]
@@ -38,7 +37,7 @@ def get_average_diesel_price():
         price = float(data['series'][0]['data'][0][1])
         return price
     except:
-        return 3.592  # Fallback value if API fails
+        return 3.592  # Fallback if API fails
 
 def geocode_location(location):
     loc = geolocator.geocode(location, timeout=10)
@@ -47,11 +46,8 @@ def geocode_location(location):
 def format_label(loc):
     address = loc.raw.get("address", {})
     city = (
-        address.get("city")
-        or address.get("town")
-        or address.get("village")
-        or address.get("hamlet")
-        or loc.address.split(',')[0]
+        address.get("city") or address.get("town") or address.get("village") or
+        address.get("hamlet") or loc.address.split(',')[0]
     )
     state_abbr = STATE_ABBR.get(address.get("state", ""), "")
     return f"{city}, {state_abbr}" if city and state_abbr else loc.address.split(',')[0]
@@ -153,30 +149,43 @@ def result():
 
         ev_map.save("static/ev_map.html")
 
-        # Diesel-only calculations
+        # Diesel Calculations
         diesel_price = get_average_diesel_price()
+        annual_miles = diesel_miles * annual_trips
+
         fuel_cost = annual_trips * (diesel_miles / mpg) * diesel_price if annual_trips else 0
         maintenance_cost = diesel_miles * (17500 / (diesel_miles * annual_trips)) if annual_trips else 0
         depreciation_cost = diesel_miles * (16600 / 750000)
         total_annual_cost = fuel_cost + maintenance_cost + depreciation_cost
-        annual_emissions = annual_trips * diesel_miles * 1.617
+
+        emissions_kg = annual_miles * 1.617  # kg
+        emissions_metric_tons = emissions_kg / 1000  # to metric tons
+
+        # Save calculations to .txt
+        with open("static/calculations.txt", "w") as f:
+            f.write(f"Diesel Route: {diesel_miles} miles\n")
+            f.write(f"Annual Trips: {annual_trips}\n")
+            f.write(f"Annual Miles: {annual_miles}\n")
+            f.write(f"MPG Used: {mpg}\n")
+            f.write(f"Diesel Price: ${diesel_price}/gal\n")
+            f.write(f"Fuel Cost: ${fuel_cost:.2f}\n")
+            f.write(f"Maintenance Cost: ${maintenance_cost:.2f}\n")
+            f.write(f"Depreciation Cost: ${depreciation_cost:.2f}\n")
+            f.write(f"Total Annual Cost: ${total_annual_cost:.2f}\n")
+            f.write(f"Annual CO2 Emissions: {emissions_metric_tons:.2f} metric tons\n")
 
         return render_template("result.html",
                                diesel_miles=diesel_miles,
                                ev_miles=ev_miles,
                                ev_unavailable=ev_unavailable,
-                               mpg=mpg,
                                annual_trips=annual_trips,
-                               fuel_cost=round(fuel_cost, 2),
-                               maintenance_cost=round(maintenance_cost, 2),
-                               depreciation_cost=round(depreciation_cost, 2),
+                               annual_miles=annual_miles,
                                total_cost=round(total_annual_cost, 2),
-                               emissions=round(annual_emissions, 2),
-                               diesel_price=round(diesel_price, 3))
+                               emissions=round(emissions_metric_tons, 2))
 
     except Exception as e:
         return f"<h2>Route Error</h2><p>{e}</p>"
 
-if __name__ == "__main__":
-    port = int(os.environ.get("PORT", 5000))
-    app.run(host="0.0.0.0", port=port)
+@app.route("/download")
+def download():
+    return send_file("static/calculations.txt", as_attachment=True)
