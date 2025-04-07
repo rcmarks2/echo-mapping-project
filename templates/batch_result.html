@@ -1,0 +1,108 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Batch Results - Echo Route Planner</title>
+    <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@400;700&display=swap" rel="stylesheet">
+    <style>
+        body {
+            font-family: 'Roboto', sans-serif;
+            background-color: #f4f7f9;
+            margin: 0;
+            padding: 0;
+            color: #002f6c;
+        }
+
+        .header {
+            background-color: #002f6c;
+            color: #fff;
+            padding: 25px;
+            text-align: center;
+            position: relative;
+        }
+
+        .header img.echo-logo {
+            position: absolute;
+            right: 25px;
+            top: 50%;
+            transform: translateY(-50%);
+            height: 50px;
+        }
+
+        h1 {
+            margin: 0;
+            font-size: 32px;
+        }
+
+        .container {
+            max-width: 700px;
+            margin: 50px auto;
+            background-color: #ffffff;
+            border-radius: 8px;
+            padding: 30px;
+            box-shadow: 0 6px 12px rgba(0, 0, 0, 0.1);
+            text-align: center;
+        }
+
+        p {
+            font-size: 18px;
+            margin-top: 20px;
+        }
+
+        .download-button {
+            display: inline-block;
+            margin-top: 30px;
+            padding: 12px 20px;
+            background-color: #4CAF50;
+            color: white;
+            text-decoration: none;
+            border-radius: 6px;
+            font-weight: bold;
+        }
+
+        .download-button:hover {
+            background-color: #3d8c40;
+        }
+
+        .back-link {
+            margin-top: 40px;
+        }
+
+        .back-link a {
+            color: #007bff;
+            text-decoration: none;
+            font-weight: bold;
+        }
+
+        .back-link a:hover {
+            text-decoration: underline;
+        }
+
+        .uiuc-logo {
+            position: fixed;
+            bottom: 15px;
+            left: 15px;
+            height: 50px;
+        }
+    </style>
+</head>
+<body>
+
+    <div class="header">
+        <h1>Batch Route Results</h1>
+        <img src="{{ url_for('static', filename='echo_logo.png') }}" alt="Echo Logo" class="echo-logo">
+    </div>
+
+    <div class="container">
+        <p><strong>{{ count }}</strong> routes successfully processed.</p>
+        <a class="download-button" href="{{ url_for('download_batch') }}">Download Results (.xlsx)</a>
+
+        <div class="back-link">
+            <p><a href="{{ url_for('index') }}">← Plan Another Route</a></p>
+        </div>
+    </div>
+
+    <img src="{{ url_for('static', filename='uiuc_logo.png') }}" alt="UIUC Logo" class="uiuc-logo">
+
+</body>
+</html>
