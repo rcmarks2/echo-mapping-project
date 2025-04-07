@@ -105,8 +105,8 @@ def batch_result():
                 "EV Feasible": "Yes" if ev_feasible else "No",
                 "Diesel Cost ($)": round(diesel_total_cost, 2),
                 "Diesel Emissions (MT)": round(diesel_emissions, 2),
-                "EV Cost ($)": round(ev_total_cost, 2) if ev_feasible != "N/A" else "N/A",
-                "EV Emissions (MT)": round(ev_emissions, 2) if ev_feasible != "N/A" else "N/A"
+                "EV Cost ($)": round(ev_total_cost, 2) if isinstance(ev_total_cost, (int, float)) else "N/A",
+                "EV Emissions (MT)": round(ev_emissions, 2) if isinstance(ev_emissions, (int, float)) else "N/A"
             })
 
         except Exception as e:

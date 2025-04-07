@@ -104,6 +104,11 @@
             margin-top: 10px;
         }
 
+        .note strong {
+            display: block;
+            margin-top: 10px;
+        }
+
         footer {
             text-align: center;
             margin-top: 60px;
@@ -162,7 +167,16 @@
 
             <label for="excel">Upload Excel File:</label>
             <input type="file" name="excel" id="excel" accept=".xlsx" required>
-            <div class="note">File must include: Start City, Start State, Destination City, Destination State, Annual Trips (min 1), and optional MPG</div>
+
+            <div class="note">
+                <strong>Your Excel file must have the following column headers (case-sensitive) in this exact order:</strong>
+                1. <code>Start City</code><br>
+                2. <code>Start State</code><br>
+                3. <code>Destination City</code><br>
+                4. <code>Destination State</code><br>
+                5. <code>MPG (Will Default To 9)</code> (optional)<br>
+                6. <code>Annual Trips (Minimum 1)</code> (required)
+            </div>
 
             <button type="submit">Upload & Process Routes</button>
         </form>
