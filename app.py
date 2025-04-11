@@ -24,7 +24,7 @@ def calculate_distance(a, b):
     return geodesic(a, b).miles
 
 def get_openroute_path(start, end):
-    url = "https://api.openrouteservice.org/v2/directions/driving-hgv"
+    url = "https://api.openrouteservice.org/v2/directions/driving-car"
     headers = {
         "Authorization": ors_key,
         "Content-Type": "application/json"
@@ -107,35 +107,45 @@ def batch_result():
         ws.append(headers)
 
         for index, row in df.iterrows():
-            diesel_miles = row.get("Diesel Mileage (1 Trip)", 0)
-            trips = row.get("Annual Trips", 1)
-            if trips <= 0 or diesel_miles <= 0:
+            try:
+                start_coord = geocode_city_state(row["Start City"], row["Start State"])
+                end_coord = geocode_city_state(row["Destination City"], row["Destination State"])
+                trips = int(row["Annual Trips"])
+                if trips <= 0:
+                    continue
+
+                diesel_route = get_openroute_path(start_coord, end_coord)
+                diesel_miles = calculate_total_route_mileage(diesel_route)
+                if diesel_miles <= 0:
+                    continue
+
+                diesel_total_miles = diesel_miles * trips
+                diesel_cost = trips * (diesel_miles / 9) * 3.59 + diesel_miles * (17500 / diesel_total_miles) + diesel_total_miles * (16600 / 750000)
+                diesel_emissions = (diesel_total_miles * 1.617) / 1000
+
+                ev_possible = "Yes" if diesel_miles <= 225 else "No"
+                if ev_possible == "Yes":
+                    ev_total_miles = diesel_total_miles
+                    ev_cost = (ev_total_miles / 20.39) * 2.208 + diesel_miles * (10500 / ev_total_miles) + ev_total_miles * (250000 / 750000)
+                    ev_emissions = (ev_total_miles * 0.2102) / 1000
+                else:
+                    ev_total_miles = ev_cost = ev_emissions = "N/A"
+
+                ws.append([
+                    row["Start City"], row["Start State"],
+                    row["Destination City"], row["Destination State"],
+                    round(diesel_miles, 1), trips, round(diesel_total_miles, 1),
+                    f"${diesel_cost:,.2f}", round(diesel_emissions, 2), ev_possible,
+                    round(diesel_miles, 1) if ev_possible == "Yes" else "N/A",
+                    round(ev_total_miles, 1) if ev_possible == "Yes" else "N/A",
+                    f"${ev_cost:,.2f}" if ev_possible == "Yes" else "N/A",
+                    round(ev_emissions, 2) if ev_possible == "Yes" else "N/A"
+                ])
+            except Exception as row_error:
+                print(f"Skipping row {index + 2} due to error: {row_error}")
                 continue
 
-            diesel_total_miles = diesel_miles * trips
-            diesel_cost = trips * (diesel_miles / 9) * 3.59 + diesel_miles * (17500 / diesel_total_miles) + diesel_total_miles * (16600 / 750000)
-            diesel_emissions = (diesel_total_miles * 1.617) / 1000
-            ev_possible = "Yes" if diesel_miles <= 225 else "No"
-
-            if ev_possible == "Yes":
-                ev_total_miles = diesel_total_miles
-                ev_cost = (ev_total_miles / 20.39) * 2.208 + diesel_miles * (10500 / ev_total_miles) + ev_total_miles * (250000 / 750000)
-                ev_emissions = (ev_total_miles * 0.2102) / 1000
-            else:
-                ev_total_miles = ev_cost = ev_emissions = "N/A"
-
-            ws.append([
-                row.get("Start City"), row.get("Start State"),
-                row.get("Destination City"), row.get("Destination State"),
-                round(diesel_miles, 1), trips, round(diesel_total_miles, 1),
-                f"${diesel_cost:,.2f}", round(diesel_emissions, 2), ev_possible,
-                round(diesel_miles, 1) if ev_possible == "Yes" else "N/A",
-                round(ev_total_miles, 1) if ev_possible == "Yes" else "N/A",
-                f"${ev_cost:,.2f}" if ev_possible == "Yes" else "N/A",
-                round(ev_emissions, 2) if ev_possible == "Yes" else "N/A"
-            ])
-
-        # Apply styling
+        # Apply Echo-style formatting
         header_fill = PatternFill(start_color="003366", end_color="003366", fill_type="solid")
         header_font = Font(color="FFFFFF", bold=True)
         for col in range(1, len(headers) + 1):
@@ -145,7 +155,7 @@ def batch_result():
             cell.alignment = Alignment(horizontal="center", vertical="center")
             ws.column_dimensions[get_column_letter(col)].width = 18
 
-        # EV conditional formatting
+        # Conditional formatting for "EV Possible?"
         for row in range(2, ws.max_row + 1):
             cell = ws.cell(row=row, column=10)
             if cell.value == "Yes":
@@ -153,10 +163,8 @@ def batch_result():
             elif cell.value == "No":
                 cell.fill = PatternFill(start_color="FFC7CE", end_color="FFC7CE", fill_type="solid")
 
-        output_path = "static/route_results_batch.xlsx"
-        wb.save(output_path)
-
-        return render_template("batch_result.html", count=len(df))
+        wb.save("static/route_results_batch.xlsx")
+        return render_template("batch_result.html", count=ws.max_row - 1)
     except Exception as e:
         return f"<h3>Error processing batch file: {e}</h3>"
 
