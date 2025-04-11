@@ -9,7 +9,6 @@ from folium.plugins import BeautifyIcon
 
 app = Flask(__name__, template_folder="templates", static_folder="static")
 
-# API Keys
 google_api_key = "AIzaSyCIPvsZMeb_NtkuElOooPCE46fB-bJEULg"
 graphhopper_key = "23af8292-46eb-4275-900a-99c729d1952c"
 geolocator = GoogleV3(api_key=google_api_key, timeout=10)
@@ -52,29 +51,68 @@ def get_graphhopper_route(start, end):
     else:
         return None
 
-def generate_map(route_coords, start_coord, end_coord, start_label, end_label, file_path):
+def generate_ev_map_with_chargers(start_coord, end_coord, start_label, end_label, max_leg=225):
+    all_stations = load_ev_stations()
+    used_stations = []
+    m = folium.Map(location=start_coord, zoom_start=6, tiles="CartoDB positron")
+
+    folium.Marker(start_coord, tooltip=start_label, icon=BeautifyIcon(icon_shape='marker')).add_to(m)
+    folium.Marker(end_coord, tooltip=end_label, icon=BeautifyIcon(icon_shape='marker')).add_to(m)
+
+    def nearest_station(current, end, remaining_miles):
+        possible = [s for s in all_stations if calculate_distance(current, s) <= remaining_miles]
+        if not possible:
+            return None
+        return min(possible, key=lambda s: calculate_distance(s, end))
+
+    current = start_coord
+    path_coords = []
+    ev_leg_coords = []
+    feasible = True
+
+    while calculate_distance(current, end_coord) > max_leg:
+        next_stop = nearest_station(current, end_coord, max_leg)
+        if not next_stop:
+            feasible = False
+            break
+        leg = get_graphhopper_route(current, next_stop)
+        if not leg:
+            feasible = False
+            break
+        ev_leg_coords.extend(leg)
+        used_stations.append(next_stop)
+        current = next_stop
+
+    if feasible:
+        leg = get_graphhopper_route(current, end_coord)
+        if not leg:
+            feasible = False
+        else:
+            ev_leg_coords.extend(leg)
+
+    for lat, lon in all_stations:
+        color = "#2E8B57" if (lat, lon) in used_stations else "#888888"
+        folium.CircleMarker(location=(lat, lon), radius=4, color=color,
+                            fill=True, fill_color=color).add_to(m)
+
+    if feasible:
+        folium.PolyLine(locations=[(lat, lon) for lon, lat in ev_leg_coords],
+                        color="#002f6c", weight=5).add_to(m)
+        m.save("static/ev_map.html")
+        return True
+    else:
+        m.save("static/ev_map.html")
+        return False
+
+def generate_diesel_map(start_coord, end_coord, start_label, end_label):
     m = folium.Map(location=start_coord, zoom_start=6, tiles="CartoDB positron")
     folium.Marker(start_coord, tooltip=start_label, icon=BeautifyIcon(icon_shape='marker')).add_to(m)
     folium.Marker(end_coord, tooltip=end_label, icon=BeautifyIcon(icon_shape='marker')).add_to(m)
-    folium.PolyLine(locations=[(lat, lon) for lon, lat in route_coords],
-                    color="#002f6c", weight=5).add_to(m)
-    m.save(file_path)
-
-def check_ev_feasibility(start, end, max_leg=225):
-    stations = load_ev_stations()
-    path = [start]
-    current = start
-
-    while calculate_distance(current, end) > max_leg:
-        reachable = [s for s in stations if calculate_distance(current, s) <= max_leg and s not in path]
-        if not reachable:
-            return False
-        next_stop = min(reachable, key=lambda s: calculate_distance(s, end))
-        path.append(next_stop)
-        current = next_stop
-
-    path.append(end)
-    return True
+    route = get_graphhopper_route(start_coord, end_coord)
+    if route:
+        folium.PolyLine(locations=[(lat, lon) for lon, lat in route],
+                        color="#002f6c", weight=5).add_to(m)
+    m.save("static/diesel_map.html")
 
 @app.route("/")
 def index():
@@ -98,22 +136,16 @@ def result():
         miles = calculate_distance(start_coord, end_coord)
         annual_miles = miles * trips
 
-        # Diesel calculations
         diesel_fuel = trips * (miles / mpg) * 3.59
         diesel_maint = miles * (17500 / annual_miles)
         diesel_depr = miles * (16600 / 750000)
         diesel_cost = diesel_fuel + diesel_maint + diesel_depr
         diesel_emissions = (annual_miles * 1.617) / 1000
 
-        # Generate diesel map
-        diesel_route = get_graphhopper_route(start_coord, end_coord)
-        generate_map(diesel_route, start_coord, end_coord, start_label, end_label, "static/diesel_map.html")
+        generate_diesel_map(start_coord, end_coord, start_label, end_label)
 
-        # EV Feasibility Check
-        ev_possible = check_ev_feasibility(start_coord, end_coord)
+        ev_possible = generate_ev_map_with_chargers(start_coord, end_coord, start_label, end_label)
         if ev_possible:
-            ev_route = get_graphhopper_route(start_coord, end_coord)
-            generate_map(ev_route, start_coord, end_coord, start_label, end_label, "static/ev_map.html")
             ev_fuel = (annual_miles / 20.39) * 2.208
             ev_maint = miles * (10500 / annual_miles)
             ev_depr = annual_miles * (250000 / 750000)
