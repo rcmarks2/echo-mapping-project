@@ -14,7 +14,7 @@ import concurrent.futures
 
 app = Flask(__name__)
 
-google_api_key = "AIzaSyCIPvsZMeb_NtkuElOooPCE46fB-bJEULg"
+google_api_key = "YOUR_GOOGLE_API_KEY"
 geolocator = GoogleV3(api_key=google_api_key, timeout=10)
 client = Client(key=os.environ.get("ORS_API_KEY"))
 EIA_API_KEY = "gTCTiZrohnP58W0jSqnrvJECt308as0Ih350wX9Q"
@@ -59,15 +59,18 @@ def geocode_city_state(city, state, row_num=1):
 def calculate_distance(a, b):
     return geodesic(a, b).miles
 
-def check_ev_feasibility(start, end, max_leg=225):
-    current = start
-    while calculate_distance(current, end) > max_leg:
-        midpoint = ((current[0] + end[0]) / 2, (current[1] + end[1]) / 2)
-        if calculate_distance(current, midpoint) > max_leg:
-            return False
-        current = midpoint
-    return True
-
+def load_ev_stations():
+    ev_stations = []
+    for i in range(1, 8):
+        file_path = f"ev_stations/{i}.xlsx"
+        if os.path.exists(file_path):
+            df = pd.read_excel(file_path)
+            for _, row in df.iterrows():
+                lat = row.get('Latitude') or row.get('latitude')
+                lon = row.get('Longitude') or row.get('longitude')
+                if pd.notna(lat) and pd.notna(lon):
+                    ev_stations.append((lat, lon))
+    return ev_stations
 def generate_diesel_map(start_coord, end_coord):
     coords = [start_coord[::-1], end_coord[::-1]]
     route = client.directions(coords, profile='driving-hgv', format='geojson')
@@ -78,198 +81,41 @@ def generate_diesel_map(start_coord, end_coord):
     m.save("static/diesel_map.html")
 
 def generate_ev_map(start_coord, end_coord, max_leg=225):
+    all_stations = load_ev_stations()
+    used_stations = []
     m = folium.Map(location=start_coord, zoom_start=6, tiles="CartoDB positron")
+
     folium.Marker(start_coord, tooltip="Start", icon=BeautifyIcon(icon_shape='marker')).add_to(m)
     folium.Marker(end_coord, tooltip="End", icon=BeautifyIcon(icon_shape='marker')).add_to(m)
 
+    def nearest_station(coord, remaining_miles):
+        best = None
+        for station in all_stations:
+            dist = calculate_distance(coord, station)
+            if dist <= remaining_miles and (best is None or dist < calculate_distance(coord, best)):
+                best = station
+        return best
+
     current = start_coord
-    ev_coords = [start_coord]
     while calculate_distance(current, end_coord) > max_leg:
-        midpoint = ((current[0] + end_coord[0]) / 2, (current[1] + end_coord[1]) / 2)
-        ev_coords.append(midpoint)
-        current = midpoint
-    ev_coords.append(end_coord)
+        next_stop = nearest_station(current, max_leg)
+        if not next_stop:
+            break
+        used_stations.append(next_stop)
+        leg_coords = [current[::-1], next_stop[::-1]]
+        route = client.directions(leg_coords, profile='driving-hgv', format='geojson')
+        folium.GeoJson(route, style_function=lambda x: {'color': '#002f6c', 'weight': 5}).add_to(m)
+        current = next_stop
 
-    for coord in ev_coords[1:-1]:
-        folium.CircleMarker(coord, radius=7, color="red", fill=True, fill_color="red").add_to(m)
+    if calculate_distance(current, end_coord) <= max_leg:
+        leg_coords = [current[::-1], end_coord[::-1]]
+        route = client.directions(leg_coords, profile='driving-hgv', format='geojson')
+        folium.GeoJson(route, style_function=lambda x: {'color': '#002f6c', 'weight': 5}).add_to(m)
+    else:
+        print("EV route not possible with available stations.")
 
-    for i in range(len(ev_coords) - 1):
-        coords = [ev_coords[i][::-1], ev_coords[i + 1][::-1]]
-        route = client.directions(coords, profile='driving-hgv', format='geojson')
-        folium.GeoJson(route, name=f"EV Leg {i+1}", style_function=lambda x: {"color": "#FF4500", "weight": 5}).add_to(m)
+    for lat, lon in all_stations:
+        color = '#2E8B57' if (lat, lon) in used_stations else '#888888'
+        folium.CircleMarker(location=(lat, lon), radius=4, color=color, fill=True, fill_color=color).add_to(m)
 
     m.save("static/ev_map.html")
-@app.route("/")
-def index():
-    return render_template("index.html")
-
-@app.route("/result", methods=["POST"])
-def single_result():
-    try:
-        start = request.form["start"]
-        end = request.form["end"]
-        mpg_input = request.form.get("mpg", "").strip()
-        mpg = float(mpg_input) if mpg_input else 9.0
-        annual_trips = int(request.form["annual_trips"])
-        if annual_trips < 1:
-            raise ValueError("Annual trips must be at least 1")
-
-        start_city, start_state = [s.strip() for s in start.split(",")]
-        end_city, end_state = [s.strip() for s in end.split(",")]
-
-        start_coord = geocode_city_state(start_city, start_state)
-        end_coord = geocode_city_state(end_city, end_state)
-
-        miles = calculate_distance(start_coord, end_coord)
-        annual_miles = miles * annual_trips
-        diesel_price = get_average_diesel_price()
-
-        diesel_fuel = annual_trips * (miles / mpg) * diesel_price
-        diesel_maint = miles * (17500 / annual_miles)
-        diesel_depr = miles * (16600 / 750000)
-        diesel_cost = diesel_fuel + diesel_maint + diesel_depr
-        diesel_emissions = (annual_miles * 1.617) / 1000
-
-        ev_possible = check_ev_feasibility(start_coord, end_coord)
-        generate_diesel_map(start_coord, end_coord)
-
-        if ev_possible:
-            generate_ev_map(start_coord, end_coord)
-            ev_fuel = (annual_miles / 20.39) * 2.208
-            ev_maint = miles * (10500 / annual_miles)
-            ev_depr = annual_miles * (250000 / 750000)
-            ev_cost = ev_fuel + ev_maint + ev_depr
-            ev_emissions = (annual_miles * 0.2102) / 1000
-        else:
-            ev_cost = ev_emissions = None
-
-        df = pd.DataFrame([{
-            "Diesel Mileage (1 Trip)": round(miles, 1),
-            "Annual Trips": annual_trips,
-            "Diesel Total Mileage": round(annual_miles, 1),
-            "Diesel Total Cost": round(diesel_cost, 2),
-            "Diesel Total Emissions": round(diesel_emissions, 2),
-            "EV Possible?": "Yes" if ev_possible else "No",
-            "EV Mileage (1 Trip)": round(miles, 1) if ev_possible else "N/A",
-            "EV Total Mileage": round(annual_miles, 1) if ev_possible else "N/A",
-            "EV Total Cost": round(ev_cost, 2) if ev_cost else "N/A",
-            "EV Total Emissions": round(ev_emissions, 2) if ev_emissions else "N/A"
-        }])
-        df.to_excel("static/single_route_details.xlsx", index=False)
-
-        return render_template("result.html",
-            diesel_miles=round(miles, 1),
-            annual_trips=annual_trips,
-            diesel_annual_miles=round(annual_miles, 1),
-            diesel_total_cost=round(diesel_cost, 2),
-            diesel_emissions=round(diesel_emissions, 2),
-            ev_unavailable=not ev_possible,
-            ev_miles=round(miles, 1) if ev_possible else None,
-            ev_annual_miles=round(annual_miles, 1) if ev_possible else None,
-            ev_total_cost=round(ev_cost, 2) if ev_cost else None,
-            ev_emissions=round(ev_emissions, 2) if ev_emissions else None,
-        )
-    except Exception as e:
-        return f"<h3>Error: {str(e)}</h3>"
-
-@app.route("/download")
-def download():
-    return send_file("static/single_route_details.xlsx", as_attachment=True)
-
-@app.route("/batch-result", methods=["POST"])
-def batch_result():
-    file = request.files["excel"]
-    df = pd.read_excel(file)
-
-    required_columns = [
-        "Start City", "Start State", "Destination City", "Destination State", "Annual Trips (Minimum 1)"
-    ]
-    for col in required_columns:
-        if col not in df.columns:
-            return f"<h2>Missing required column: {col}</h2>"
-
-    diesel_price = get_average_diesel_price()
-    output_rows = []
-
-    def process_row(index, row):
-        try:
-            row_num = index + 2
-            start_city = row["Start City"]
-            start_state = row["Start State"]
-            end_city = row["Destination City"]
-            end_state = row["Destination State"]
-            mpg_raw = row.get("MPG (Will Default To 9)", "")
-            mpg = float(mpg_raw) if pd.notna(mpg_raw) and str(mpg_raw).strip() else 9.0
-            trips = int(row["Annual Trips (Minimum 1)"])
-            if trips < 1:
-                return None
-
-            start_coord = geocode_city_state(start_city, start_state, row_num)
-            end_coord = geocode_city_state(end_city, end_state, row_num)
-
-            miles = calculate_distance(start_coord, end_coord)
-            annual_miles = miles * trips
-            diesel_fuel = trips * (miles / mpg) * diesel_price
-            diesel_maint = miles * (17500 / annual_miles)
-            diesel_depr = miles * (16600 / 750000)
-            diesel_cost = diesel_fuel + diesel_maint + diesel_depr
-            diesel_emissions = (annual_miles * 1.617) / 1000
-            ev_possible = check_ev_feasibility(start_coord, end_coord)
-
-            if ev_possible:
-                ev_fuel = (annual_miles / 20.39) * 2.208
-                ev_maint = miles * (10500 / annual_miles)
-                ev_depr = annual_miles * (250000 / 750000)
-                ev_cost = ev_fuel + ev_maint + ev_depr
-                ev_emissions = (annual_miles * 0.2102) / 1000
-            else:
-                ev_cost = ev_emissions = "N/A"
-
-            return {
-                "Start City": start_city,
-                "Start State": start_state,
-                "Destination City": end_city,
-                "Destination State": end_state,
-                "Diesel Mileage (1 Trip)": round(miles, 1),
-                "Annual Trips": trips,
-                "Diesel Total Mileage": round(annual_miles, 1),
-                "Diesel Total Cost": round(diesel_cost, 2),
-                "Diesel Total Emissions": round(diesel_emissions, 2),
-                "EV Possible?": "Yes" if ev_possible else "No",
-                "EV Mileage (1 Trip)": round(miles, 1) if ev_possible else "N/A",
-                "EV Total Mileage": round(annual_miles, 1) if ev_possible else "N/A",
-                "EV Total Cost": round(ev_cost, 2) if isinstance(ev_cost, (float, int)) else "N/A",
-                "EV Total Emmisions": round(ev_emissions, 2) if isinstance(ev_emissions, (float, int)) else "N/A"
-            }
-
-        except Exception as e:
-            print(f"[ERROR] Row {index+2}: {e}")
-            return None
-
-    with concurrent.futures.ThreadPoolExecutor(max_workers=30) as executor:
-        futures = [executor.submit(process_row, idx, row) for idx, row in df.iterrows()]
-        for future in concurrent.futures.as_completed(futures):
-            result = future.result()
-            if result:
-                output_rows.append(result)
-
-    result_df = pd.DataFrame(output_rows)
-    result_df.to_excel("static/route_results_batch.xlsx", index=False)
-
-    with open("static/formulas.txt", "w") as f:
-        f.write("=== Calculation Formulas & Constants Used ===\\n")
-        f.write("See README or documentation for logic.")
-
-    return render_template("batch_result.html", count=len(output_rows))
-
-@app.route("/download-batch")
-def download_batch():
-    return send_file("static/route_results_batch.xlsx", as_attachment=True)
-
-@app.route("/download-formulas")
-def download_formulas():
-    return send_file("static/formulas.txt", as_attachment=True)
-
-if __name__ == "__main__":
-    port = int(os.environ.get("PORT", 5000))
-    app.run(host="0.0.0.0", port=port)
