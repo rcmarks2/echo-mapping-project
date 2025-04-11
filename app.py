@@ -11,7 +11,7 @@ from openpyxl.styles import PatternFill
 app = Flask(__name__, template_folder="templates", static_folder="static")
 
 google_api_key = "YOUR_GOOGLE_API_KEY"
-ors_key = "5b3ce3597851110001cf6248a92956daf1e74ff1b93a12f8c30baf99"
+ors_key = "5b3ce3597851110001cf62484c21171bb42b5156136eb3b6c86735ceb936e6d856184e15bb72367f"
 geolocator = GoogleV3(api_key=google_api_key, timeout=10)
 
 def geocode_city_state(city, state):
