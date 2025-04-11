@@ -24,23 +24,29 @@ def calculate_distance(a, b):
     return geodesic(a, b).miles
 
 def get_openroute_path(start, end):
-    url = "https://api.openrouteservice.org/v2/directions/driving-car"
-    headers = {
-        "Authorization": ors_key,
-        "Content-Type": "application/json"
-    }
-    body = {
-        "coordinates": [[start[1], start[0]], [end[1], end[0]]]
-    }
-    response = requests.post(url, json=body, headers=headers)
-    if response.status_code == 200:
-        data = response.json()
-        if "features" in data and data["features"]:
-            return data["features"][0]["geometry"]["coordinates"]
-        else:
-            raise ValueError(f"No route found (empty features) between {start} and {end}")
-    else:
-        raise ValueError(f"ORS error: {response.status_code} → {response.text}")
+    def query_ors(profile):
+        url = f"https://api.openrouteservice.org/v2/directions/{profile}"
+        headers = {
+            "Authorization": ors_key,
+            "Content-Type": "application/json"
+        }
+        body = {
+            "coordinates": [[start[1], start[0]], [end[1], end[0]]]
+        }
+        response = requests.post(url, json=body, headers=headers)
+        if response.status_code == 200:
+            data = response.json()
+            if "features" in data and data["features"]:
+                return data["features"][0]["geometry"]["coordinates"]
+        return None
+
+    route = query_ors("driving-hgv")
+    if not route:
+        print("⚠️ driving-hgv failed, retrying with driving-car...")
+        route = query_ors("driving-car")
+    if not route:
+        raise ValueError(f"No route found (empty features) between {start} and {end}")
+    return route
 
 def calculate_total_route_mileage(route_coords):
     total_miles = 0
