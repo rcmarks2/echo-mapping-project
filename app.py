@@ -119,3 +119,6 @@ def generate_ev_map(start_coord, end_coord, max_leg=225):
         folium.CircleMarker(location=(lat, lon), radius=4, color=color, fill=True, fill_color=color).add_to(m)
 
     m.save("static/ev_map.html")
+if __name__ == "__main__":
+    port = int(os.environ.get("PORT", 5000))  # Required by Render
+    app.run(host="0.0.0.0", port=port)
