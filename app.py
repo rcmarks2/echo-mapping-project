@@ -9,6 +9,7 @@ from folium.plugins import BeautifyIcon
 
 app = Flask(__name__, template_folder="templates", static_folder="static")
 
+# API Keys
 google_api_key = "AIzaSyCIPvsZMeb_NtkuElOooPCE46fB-bJEULg"
 graphhopper_key = "23af8292-46eb-4275-900a-99c729d1952c"
 geolocator = GoogleV3(api_key=google_api_key, timeout=10)
@@ -51,58 +52,62 @@ def get_graphhopper_route(start, end):
     else:
         return None
 
+def calculate_total_route_mileage(route_coords):
+    total_miles = 0
+    for i in range(len(route_coords) - 1):
+        a = (route_coords[i][1], route_coords[i][0])
+        b = (route_coords[i + 1][1], route_coords[i + 1][0])
+        total_miles += calculate_distance(a, b)
+    return total_miles
+
 def generate_ev_map_with_chargers(start_coord, end_coord, start_label, end_label, max_leg=225):
     all_stations = load_ev_stations()
     used_stations = []
+    ev_route_coords = []
     m = folium.Map(location=start_coord, zoom_start=6, tiles="CartoDB positron")
 
     folium.Marker(start_coord, tooltip=start_label, icon=BeautifyIcon(icon_shape='marker')).add_to(m)
     folium.Marker(end_coord, tooltip=end_label, icon=BeautifyIcon(icon_shape='marker')).add_to(m)
 
     def nearest_station(current, end, remaining_miles):
-        possible = [s for s in all_stations if calculate_distance(current, s) <= remaining_miles]
+        possible = [s for s in all_stations if calculate_distance(current, s) <= remaining_miles and s not in used_stations]
         if not possible:
             return None
         return min(possible, key=lambda s: calculate_distance(s, end))
 
     current = start_coord
-    path_coords = []
-    ev_leg_coords = []
-    feasible = True
-
+    path_points = [current]
     while calculate_distance(current, end_coord) > max_leg:
         next_stop = nearest_station(current, end_coord, max_leg)
         if not next_stop:
-            feasible = False
-            break
+            return False, 0
         leg = get_graphhopper_route(current, next_stop)
         if not leg:
-            feasible = False
-            break
-        ev_leg_coords.extend(leg)
+            return False, 0
+        ev_route_coords.extend(leg)
         used_stations.append(next_stop)
+        path_points.append(next_stop)
         current = next_stop
 
-    if feasible:
-        leg = get_graphhopper_route(current, end_coord)
-        if not leg:
-            feasible = False
-        else:
-            ev_leg_coords.extend(leg)
+    final_leg = get_graphhopper_route(current, end_coord)
+    if not final_leg:
+        return False, 0
+    ev_route_coords.extend(final_leg)
+    path_points.append(end_coord)
 
+    # Add charger markers
     for lat, lon in all_stations:
-        color = "#2E8B57" if (lat, lon) in used_stations else "#888888"
-        folium.CircleMarker(location=(lat, lon), radius=4, color=color,
-                            fill=True, fill_color=color).add_to(m)
+        if (lat, lon) in used_stations:
+            folium.CircleMarker(location=(lat, lon), radius=7, color="#2E8B57", fill=True, fill_color="#2E8B57").add_to(m)
+        else:
+            folium.CircleMarker(location=(lat, lon), radius=4, color="#888888", fill=True, fill_color="#888888").add_to(m)
 
-    if feasible:
-        folium.PolyLine(locations=[(lat, lon) for lon, lat in ev_leg_coords],
-                        color="#002f6c", weight=5).add_to(m)
-        m.save("static/ev_map.html")
-        return True
-    else:
-        m.save("static/ev_map.html")
-        return False
+    # Draw route
+    folium.PolyLine(locations=[(lat, lon) for lon, lat in ev_route_coords],
+                    color="#002f6c", weight=5).add_to(m)
+    m.save("static/ev_map.html")
+    total_ev_miles = calculate_total_route_mileage(ev_route_coords)
+    return True, total_ev_miles
 
 def generate_diesel_map(start_coord, end_coord, start_label, end_label):
     m = folium.Map(location=start_coord, zoom_start=6, tiles="CartoDB positron")
@@ -136,6 +141,7 @@ def result():
         miles = calculate_distance(start_coord, end_coord)
         annual_miles = miles * trips
 
+        # Diesel calculations
         diesel_fuel = trips * (miles / mpg) * 3.59
         diesel_maint = miles * (17500 / annual_miles)
         diesel_depr = miles * (16600 / 750000)
@@ -144,15 +150,16 @@ def result():
 
         generate_diesel_map(start_coord, end_coord, start_label, end_label)
 
-        ev_possible = generate_ev_map_with_chargers(start_coord, end_coord, start_label, end_label)
+        ev_possible, ev_miles = generate_ev_map_with_chargers(start_coord, end_coord, start_label, end_label)
         if ev_possible:
-            ev_fuel = (annual_miles / 20.39) * 2.208
-            ev_maint = miles * (10500 / annual_miles)
-            ev_depr = annual_miles * (250000 / 750000)
+            ev_annual_miles = ev_miles * trips
+            ev_fuel = (ev_annual_miles / 20.39) * 2.208
+            ev_maint = ev_miles * (10500 / ev_annual_miles)
+            ev_depr = ev_annual_miles * (250000 / 750000)
             ev_cost = ev_fuel + ev_maint + ev_depr
-            ev_emissions = (annual_miles * 0.2102) / 1000
+            ev_emissions = (ev_annual_miles * 0.2102) / 1000
         else:
-            ev_cost = ev_emissions = None
+            ev_miles = ev_annual_miles = ev_cost = ev_emissions = None
 
         return render_template("result.html",
             diesel_miles=round(miles, 1),
@@ -161,10 +168,10 @@ def result():
             diesel_total_cost=round(diesel_cost, 2),
             diesel_emissions=round(diesel_emissions, 2),
             ev_unavailable=not ev_possible,
-            ev_miles=round(miles, 1) if ev_possible else None,
-            ev_annual_miles=round(annual_miles, 1) if ev_possible else None,
-            ev_total_cost=round(ev_cost, 2) if ev_cost else None,
-            ev_emissions=round(ev_emissions, 2) if ev_emissions else None,
+            ev_miles=round(ev_miles, 1) if ev_possible else None,
+            ev_annual_miles=round(ev_annual_miles, 1) if ev_possible else None,
+            ev_total_cost=round(ev_cost, 2) if ev_possible else None,
+            ev_emissions=round(ev_emissions, 2) if ev_possible else None,
         )
     except Exception as e:
         return f"<h3>Error: {str(e)}</h3>"
