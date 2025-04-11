@@ -116,6 +116,12 @@ def index():
 @app.route("/batch-result", methods=["POST"])
 def batch_result():
     try:
+        # (your existing batch logic here)
+        return render_template("batch_result.html")
+    except Exception as e:
+        return f"<h3>Error processing batch file: {e}</h3>"
+
+    try:
         file = request.files["excel"]
         df = pd.read_excel(file)
         results = []
@@ -208,6 +214,8 @@ def download_batch():
 @app.route("/download-formulas")
 def download_formulas():
     return send_file("static/formulas.txt", as_attachment=True)
+
+
 if __name__ == "__main__":
     port = int(os.environ.get("PORT", 5000))
     app.run(host="0.0.0.0", port=port)

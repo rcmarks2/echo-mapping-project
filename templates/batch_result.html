@@ -2,52 +2,97 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <title>Batch Route Results</title>
-    <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@400;700&display=swap" rel="stylesheet">
+    <title>Batch Route Results - Echo Global</title>
     <style>
         body {
-            font-family: 'Roboto', sans-serif;
-            background-color: #f4f7f9;
-            color: #002f6c;
-            padding: 40px;
-            text-align: center;
+            font-family: 'Segoe UI', sans-serif;
+            margin: 0;
+            background-color: #ffffff;
+            color: #003366;
         }
-        h1 {
+
+        .banner {
+            background-color: #003366;
+            color: white;
+            padding: 20px;
+            position: relative;
+        }
+
+        .banner h1 {
+            margin: 0;
             font-size: 26px;
         }
-        .green-button {
-            background-color: #2E8B57;
+
+        .logo-echo {
+            position: absolute;
+            top: 10px;
+            right: 20px;
+            height: 50px;
+        }
+
+        .logo-illinois {
+            position: fixed;
+            bottom: 10px;
+            left: 20px;
+            height: 40px;
+        }
+
+        .container {
+            max-width: 800px;
+            margin: 40px auto;
+            padding: 20px;
+        }
+
+        .message {
+            background-color: #f2f2f2;
+            padding: 20px;
+            font-size: 18px;
+            border-radius: 10px;
+            margin-bottom: 40px;
+        }
+
+        .buttons {
+            display: flex;
+            gap: 20px;
+            justify-content: center;
+            flex-wrap: wrap;
+        }
+
+        .download-btn {
+            background-color: #28a745;
             color: white;
-            border: none;
-            padding: 14px 28px;
-            border-radius: 6px;
             font-size: 16px;
+            padding: 12px 24px;
+            border: none;
+            border-radius: 6px;
             cursor: pointer;
             text-decoration: none;
-            display: inline-block;
-            margin: 15px;
         }
-        .green-button:hover {
-            background-color: #256f48;
-        }
-        .back-link {
-            margin-top: 30px;
-            display: block;
-            font-size: 16px;
-            color: #002f6c;
-            text-decoration: none;
-        }
-        .back-link:hover {
-            text-decoration: underline;
+
+        .download-btn:hover {
+            background-color: #218838;
         }
     </style>
 </head>
 <body>
-    <h1>{{ count }} routes processed successfully!</h1>
 
-    <a href="{{ url_for('download_batch') }}" class="green-button">Download Results Excel</a>
-    <a href="{{ url_for('download_formulas') }}" class="green-button">Download Formulas</a>
+    <div class="banner">
+        <h1>Batch Route Results</h1>
+        <img class="logo-echo" src="/static/echo_logo.png" alt="Echo Logo">
+    </div>
 
-    <a href="{{ url_for('index') }}" class="back-link">← Back to Home</a>
+    <img class="logo-illinois" src="/static/illinois_logo.png" alt="Illinois Logo">
+
+    <div class="container">
+        <div class="message">
+            <strong>Success:</strong> {{ count }} routes were processed successfully.
+        </div>
+
+        <div class="buttons">
+            <a class="download-btn" href="/download-batch">Download Excel File</a>
+            <a class="download-btn" href="/download-formulas">Download Formulas</a>
+        </div>
+    </div>
+
 </body>
 </html>
