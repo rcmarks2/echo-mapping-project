@@ -8,11 +8,8 @@ import os
 import csv
 import folium
 from folium.plugins import BeautifyIcon
-from openpyxl import load_workbook
-from openpyxl.styles import Font, PatternFill
-import concurrent.futures
 
-app = Flask(__name__)
+app = Flask(__name__, template_folder="templates", static_folder="static")
 
 google_api_key = "YOUR_GOOGLE_API_KEY"
 geolocator = GoogleV3(api_key=google_api_key, timeout=10)
