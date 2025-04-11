@@ -75,6 +75,9 @@ def result():
         end_coord = geocode_city_state(end_city.strip(), end_state.strip())
 
         diesel_route = get_openroute_path(start_coord, end_coord)
+        if not diesel_route:
+            raise Exception("Diesel route failed")
+
         diesel_miles = calculate_total_route_mileage(diesel_route)
         diesel_annual_miles = diesel_miles * trips
         diesel_cost = trips * (diesel_miles / mpg) * 3.59 + diesel_miles * (17500 / diesel_annual_miles) + diesel_miles * (16600 / 750000)
@@ -147,6 +150,8 @@ def batch_result():
                 mpg = float(row.get("MPG (Will Default To 9)", 9))
                 trips = int(row["Annual Trips (Minimum 1)"])
                 diesel_route = get_openroute_path(start_coord, end_coord)
+                if not diesel_route:
+                    raise Exception("Diesel route failed")
                 diesel_miles = calculate_total_route_mileage(diesel_route)
                 diesel_annual_miles = diesel_miles * trips
                 diesel_cost = trips * (diesel_miles / mpg) * 3.59 + diesel_miles * (17500 / diesel_annual_miles) + diesel_miles * (16600 / 750000)
@@ -204,16 +209,13 @@ def batch_result():
                     "EV Total Cost": round(ev_cost, 2) if isinstance(ev_cost, float) else "N/A",
                     "EV Total Emissions": round(ev_emissions, 2) if isinstance(ev_emissions, float) else "N/A"
                 })
-
             except Exception as err:
                 print(f"Error in row {i+2}: {err}")
                 continue
 
-        # Save to Excel with formatting
         output_path = "static/route_results_batch.xlsx"
         pd.DataFrame(results).to_excel(output_path, index=False)
 
-        # Apply formatting
         wb = load_workbook(output_path)
         ws = wb.active
         green_fill = PatternFill(start_color="92D050", end_color="92D050", fill_type="solid")
