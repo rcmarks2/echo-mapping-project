@@ -4,9 +4,10 @@ from geopy.distance import geodesic
 import pandas as pd
 import requests
 import os
-import folium
-from folium.plugins import BeautifyIcon
 import time
+from openpyxl import load_workbook
+from openpyxl.styles import PatternFill, Font
+from openpyxl.utils import get_column_letter
 
 app = Flask(__name__, template_folder="templates", static_folder="static")
 
@@ -64,93 +65,6 @@ def calculate_total_route_mileage(route_coords):
 def index():
     return render_template("index.html")
 
-@app.route("/result", methods=["POST"])
-def result():
-    try:
-        start_input = request.form["start"]
-        end_input = request.form["end"]
-        mpg = float(request.form.get("mpg") or 9.0)
-        trips = int(request.form["annual_trips"])
-        start_city, start_state = [s.strip() for s in start_input.split(",")]
-        end_city, end_state = [s.strip() for s in end_input.split(",")]
-        start_label = f"{start_city}, {start_state}"
-        end_label = f"{end_city}, {end_state}"
-        start_coord = geocode_city_state(start_city, start_state)
-        end_coord = geocode_city_state(end_city, end_state)
-
-        diesel_route = get_graphhopper_route(start_coord, end_coord)
-        diesel_miles = calculate_total_route_mileage(diesel_route)
-        diesel_annual_miles = diesel_miles * trips
-        diesel_cost = trips * (diesel_miles / mpg) * 3.59 + diesel_miles * (17500 / diesel_annual_miles) + diesel_miles * (16600 / 750000)
-        diesel_emissions = (diesel_annual_miles * 1.617) / 1000
-
-        m = folium.Map(location=start_coord, zoom_start=6, tiles="CartoDB positron")
-        folium.Marker(start_coord, tooltip=start_label, icon=BeautifyIcon(icon_shape='marker')).add_to(m)
-        folium.Marker(end_coord, tooltip=end_label, icon=BeautifyIcon(icon_shape='marker')).add_to(m)
-        folium.PolyLine(locations=[(lat, lon) for lon, lat in diesel_route], color="#002f6c", weight=5).add_to(m)
-        m.save("static/diesel_map.html")
-
-        all_stations = load_ev_stations()
-        used_stations = []
-        ev_route_coords = []
-        def nearest_station(current, end, max_leg=225):
-            candidates = [s for s in all_stations if calculate_distance(current, s) <= max_leg and s not in used_stations]
-            return min(candidates, key=lambda s: calculate_distance(s, end)) if candidates else None
-
-        current = start_coord
-        ev_possible = True
-        while calculate_distance(current, end_coord) > 225:
-            next_stop = nearest_station(current, end_coord)
-            if not next_stop:
-                ev_possible = False
-                break
-            segment = get_graphhopper_route(current, next_stop)
-            if not segment:
-                ev_possible = False
-                break
-            ev_route_coords.extend(segment)
-            used_stations.append(next_stop)
-            current = next_stop
-
-        if ev_possible:
-            final_segment = get_graphhopper_route(current, end_coord)
-            if not final_segment:
-                ev_possible = False
-            else:
-                ev_route_coords.extend(final_segment)
-
-        if ev_possible:
-            ev_miles = calculate_total_route_mileage(ev_route_coords)
-            ev_annual_miles = ev_miles * trips
-            ev_cost = (ev_annual_miles / 20.39) * 2.208 + ev_miles * (10500 / ev_annual_miles) + ev_annual_miles * (250000 / 750000)
-            ev_emissions = (ev_annual_miles * 0.2102) / 1000
-            m_ev = folium.Map(location=start_coord, zoom_start=6, tiles="CartoDB positron")
-            folium.Marker(start_coord, tooltip=start_label, icon=BeautifyIcon(icon_shape='marker')).add_to(m_ev)
-            folium.Marker(end_coord, tooltip=end_label, icon=BeautifyIcon(icon_shape='marker')).add_to(m_ev)
-            for lat, lon in all_stations:
-                radius = 7 if (lat, lon) in used_stations else 4
-                color = "#2E8B57" if (lat, lon) in used_stations else "#888888"
-                folium.CircleMarker(location=(lat, lon), radius=radius, color=color, fill=True, fill_color=color).add_to(m_ev)
-            folium.PolyLine(locations=[(lat, lon) for lon, lat in ev_route_coords], color="#002f6c", weight=5).add_to(m_ev)
-            m_ev.save("static/ev_map.html")
-        else:
-            ev_miles = ev_annual_miles = ev_cost = ev_emissions = None
-
-        return render_template("result.html",
-            diesel_miles=round(diesel_miles, 1),
-            annual_trips=trips,
-            diesel_annual_miles=round(diesel_annual_miles, 1),
-            diesel_total_cost=round(diesel_cost, 2),
-            diesel_emissions=round(diesel_emissions, 2),
-            ev_unavailable=not ev_possible,
-            ev_miles=round(ev_miles, 1) if ev_miles else None,
-            ev_annual_miles=round(ev_annual_miles, 1) if ev_annual_miles else None,
-            ev_total_cost=round(ev_cost, 2) if ev_cost else None,
-            ev_emissions=round(ev_emissions, 2) if ev_emissions else None
-        )
-    except Exception as e:
-        return f"<h3>Error in /result: {str(e)}</h3>"
-
 @app.route("/batch-result", methods=["POST"])
 def batch_result():
     try:
@@ -165,7 +79,10 @@ def batch_result():
                 end_coord = geocode_city_state(row["Destination City"], row["Destination State"])
                 mpg = float(row.get("MPG (Will Default To 9)", 9))
                 trips = int(row["Annual Trips (Minimum 1)"])
+
                 diesel_route = get_graphhopper_route(start_coord, end_coord)
+                if not diesel_route:
+                    raise Exception("Diesel route not found")
                 diesel_miles = calculate_total_route_mileage(diesel_route)
                 diesel_annual_miles = diesel_miles * trips
                 diesel_cost = trips * (diesel_miles / mpg) * 3.59 + diesel_miles * (17500 / diesel_annual_miles) + diesel_miles * (16600 / 750000)
@@ -229,7 +146,33 @@ def batch_result():
                 continue
 
         result_df = pd.DataFrame(results)
-        result_df.to_excel("static/route_results_batch.xlsx", index=False)
+        excel_path = "static/route_results_batch.xlsx"
+        result_df.to_excel(excel_path, index=False)
+
+        # Apply formatting using openpyxl
+        wb = load_workbook(excel_path)
+        ws = wb.active
+
+        red_fill = PatternFill(start_color="FF0000", end_color="FF0000", fill_type="solid")
+        green_fill = PatternFill(start_color="92D050", end_color="92D050", fill_type="solid")
+
+        for row in range(2, ws.max_row + 1):
+            ev_cell = ws[f"J{row}"]
+            if ev_cell.value == "Yes":
+                ev_cell.fill = green_fill
+            elif ev_cell.value == "No":
+                ev_cell.fill = red_fill
+
+        # Format currency columns
+        usd_cols = ["H", "K", "M"]
+        for col in usd_cols:
+            for row in range(2, ws.max_row + 1):
+                cell = ws[f"{col}{row}"]
+                if isinstance(cell.value, float):
+                    cell.number_format = '"$"#,##0.00'
+
+        wb.save(excel_path)
+
         return render_template("batch_result.html", count=len(results))
     except Exception as e:
         return f"<h3>Error processing batch file: {str(e)}</h3>"
@@ -238,9 +181,9 @@ def batch_result():
 def download_batch():
     return send_file("static/route_results_batch.xlsx", as_attachment=True)
 
-@app.route("/download")
-def download():
-    return send_file("static/single_route_details.xlsx", as_attachment=True)
+@app.route("/download-formulas")
+def download_formulas():
+    return send_file("static/formulas.txt", as_attachment=True)
 
 if __name__ == "__main__":
     port = int(os.environ.get("PORT", 5000))
