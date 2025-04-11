@@ -1,0 +1,36 @@
+ECHO GLOBAL LOGISTICS - ROUTE CALCULATION FORMULAS
+
+DIESEL TRUCK FORMULAS
+
+1. Fuel Cost:
+   = (Annual Trips) × (Miles per Trip ÷ MPG) × $3.59
+
+2. Maintenance Cost:
+   = (One Trip Miles) × (17,500 ÷ Annual Mileage)
+
+3. Depreciation Cost:
+   = (One Trip Miles) × ($16,600 ÷ 750,000)
+
+4. Total Annual Cost:
+   = Fuel Cost + Maintenance Cost + Depreciation Cost
+
+5. Annual CO₂ Emissions:
+   = Annual Mileage × 1.617 (kg CO₂/mile) → divide by 1000 to get metric tons
+
+
+ELECTRIC TRUCK FORMULAS
+
+1. Battery Charge Cost:
+   = (Total Miles ÷ 20.39) × $2.208
+
+2. Maintenance Cost:
+   = (One Trip Miles) × (10,500 ÷ Annual Mileage)
+
+3. Depreciation Cost:
+   = (Annual Miles) × ($250,000 ÷ 750,000)
+
+4. Total Annual Cost:
+   = Charge Cost + Maintenance Cost + Depreciation Cost
+
+5. Annual CO₂ Emissions:
+   = Annual Mileage × 0.2102 (kg CO₂/mile) → divide by 1000 to get metric tons
