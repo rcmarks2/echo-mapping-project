@@ -7,12 +7,11 @@ import os
 import time
 from openpyxl import load_workbook
 from openpyxl.styles import PatternFill
-from openpyxl.utils import get_column_letter
 
 app = Flask(__name__, template_folder="templates", static_folder="static")
 
 google_api_key = "YOUR_GOOGLE_API_KEY"
-graphhopper_key = "YOUR_GRAPHHOPPER_KEY"
+ors_key = "5b3ce3597851110001cf6248a92956daf1e74ff1b93a12f8c30baf99"
 geolocator = GoogleV3(api_key=google_api_key, timeout=10)
 
 def geocode_city_state(city, state):
@@ -23,6 +22,30 @@ def geocode_city_state(city, state):
 
 def calculate_distance(a, b):
     return geodesic(a, b).miles
+
+def get_openroute_path(start, end):
+    url = "https://api.openrouteservice.org/v2/directions/driving-hgv"
+    headers = {
+        "Authorization": ors_key,
+        "Content-Type": "application/json"
+    }
+    body = {
+        "coordinates": [[start[1], start[0]], [end[1], end[0]]]
+    }
+    response = requests.post(url, json=body, headers=headers)
+    if response.status_code == 200:
+        return response.json()["features"][0]["geometry"]["coordinates"]
+    else:
+        print("ORS Error:", response.text)
+        return None
+
+def calculate_total_route_mileage(route_coords):
+    total_miles = 0
+    for i in range(len(route_coords) - 1):
+        a = (route_coords[i][1], route_coords[i][0])
+        b = (route_coords[i + 1][1], route_coords[i + 1][0])
+        total_miles += calculate_distance(a, b)
+    return total_miles
 
 def load_ev_stations():
     ev_stations = []
@@ -36,29 +59,6 @@ def load_ev_stations():
                 if pd.notna(lat) and pd.notna(lon):
                     ev_stations.append((lat, lon))
     return ev_stations
-
-def get_graphhopper_route(start, end):
-    url = "https://graphhopper.com/api/1/route"
-    params = {
-        "point": [f"{start[0]},{start[1]}", f"{end[0]},{end[1]}"],
-        "vehicle": "truck",
-        "locale": "en",
-        "points_encoded": "false",
-        "key": graphhopper_key
-    }
-    response = requests.get(url, params=params)
-    data = response.json()
-    if "paths" in data:
-        return data["paths"][0]["points"]["coordinates"]
-    return None
-
-def calculate_total_route_mileage(route_coords):
-    total_miles = 0
-    for i in range(len(route_coords) - 1):
-        a = (route_coords[i][1], route_coords[i][0])
-        b = (route_coords[i + 1][1], route_coords[i + 1][0])
-        total_miles += calculate_distance(a, b)
-    return total_miles
 
 @app.route("/")
 def index():
@@ -74,14 +74,12 @@ def result():
         start_coord = geocode_city_state(start_city.strip(), start_state.strip())
         end_coord = geocode_city_state(end_city.strip(), end_state.strip())
 
-        # Diesel
-        diesel_route = get_graphhopper_route(start_coord, end_coord)
+        diesel_route = get_openroute_path(start_coord, end_coord)
         diesel_miles = calculate_total_route_mileage(diesel_route)
         diesel_annual_miles = diesel_miles * trips
         diesel_cost = trips * (diesel_miles / mpg) * 3.59 + diesel_miles * (17500 / diesel_annual_miles) + diesel_miles * (16600 / 750000)
         diesel_emissions = (diesel_annual_miles * 1.617) / 1000
 
-        # EV
         all_stations = load_ev_stations()
         used_stations, ev_route_coords = [], []
         current = start_coord
@@ -96,7 +94,7 @@ def result():
             if not next_stop:
                 ev_possible = False
                 break
-            segment = get_graphhopper_route(current, next_stop)
+            segment = get_openroute_path(current, next_stop)
             if not segment:
                 ev_possible = False
                 break
@@ -105,11 +103,11 @@ def result():
             current = next_stop
 
         if ev_possible:
-            final_segment = get_graphhopper_route(current, end_coord)
-            if not final_segment:
-                ev_possible = False
-            else:
+            final_segment = get_openroute_path(current, end_coord)
+            if final_segment:
                 ev_route_coords.extend(final_segment)
+            else:
+                ev_possible = False
 
         if ev_possible:
             ev_miles = calculate_total_route_mileage(ev_route_coords)
@@ -148,7 +146,7 @@ def batch_result():
                 end_coord = geocode_city_state(row["Destination City"], row["Destination State"])
                 mpg = float(row.get("MPG (Will Default To 9)", 9))
                 trips = int(row["Annual Trips (Minimum 1)"])
-                diesel_route = get_graphhopper_route(start_coord, end_coord)
+                diesel_route = get_openroute_path(start_coord, end_coord)
                 diesel_miles = calculate_total_route_mileage(diesel_route)
                 diesel_annual_miles = diesel_miles * trips
                 diesel_cost = trips * (diesel_miles / mpg) * 3.59 + diesel_miles * (17500 / diesel_annual_miles) + diesel_miles * (16600 / 750000)
@@ -167,7 +165,7 @@ def batch_result():
                     if not next_stop:
                         ev_possible = False
                         break
-                    segment = get_graphhopper_route(current, next_stop)
+                    segment = get_openroute_path(current, next_stop)
                     if not segment:
                         ev_possible = False
                         break
@@ -176,11 +174,11 @@ def batch_result():
                     current = next_stop
 
                 if ev_possible:
-                    final_segment = get_graphhopper_route(current, end_coord)
-                    if not final_segment:
-                        ev_possible = False
-                    else:
+                    final_segment = get_openroute_path(current, end_coord)
+                    if final_segment:
                         ev_route_coords.extend(final_segment)
+                    else:
+                        ev_possible = False
 
                 if ev_possible:
                     ev_miles = calculate_total_route_mileage(ev_route_coords)
@@ -211,15 +209,15 @@ def batch_result():
                 print(f"Error in row {i+2}: {err}")
                 continue
 
-        # Export to Excel
+        # Save to Excel with formatting
         output_path = "static/route_results_batch.xlsx"
         pd.DataFrame(results).to_excel(output_path, index=False)
 
-        # Format Excel with conditional formatting
+        # Apply formatting
         wb = load_workbook(output_path)
         ws = wb.active
-        red_fill = PatternFill(start_color="FF0000", end_color="FF0000", fill_type="solid")
         green_fill = PatternFill(start_color="92D050", end_color="92D050", fill_type="solid")
+        red_fill = PatternFill(start_color="FF0000", end_color="FF0000", fill_type="solid")
 
         for row in range(2, ws.max_row + 1):
             cell = ws[f"J{row}"]
@@ -235,10 +233,10 @@ def batch_result():
                     cell.number_format = '"$"#,##0.00'
 
         wb.save(output_path)
-
         return render_template("batch_result.html", count=len(results))
+
     except Exception as e:
-        return f"<h3>Error processing batch file: {str(e)}</h3>"
+        return f"<h3>Error processing batch: {e}</h3>"
 
 @app.route("/download-batch")
 def download_batch():
@@ -247,10 +245,6 @@ def download_batch():
 @app.route("/download-formulas")
 def download_formulas():
     return send_file("static/formulas.txt", as_attachment=True)
-
-@app.route("/download")
-def download():
-    return send_file("static/single_route_details.xlsx", as_attachment=True)
 
 if __name__ == "__main__":
     port = int(os.environ.get("PORT", 5000))
