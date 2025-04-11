@@ -32,7 +32,10 @@ def get_openroute_path(start, end):
     body = {
         "coordinates": [[start[1], start[0]], [end[1], end[0]]]
     }
+    print("Requesting ORS with:", body)
     response = requests.post(url, json=body, headers=headers)
+    print("Status:", response.status_code)
+    print("Response:", response.text)
     if response.status_code == 200:
         return response.json()["features"][0]["geometry"]["coordinates"]
     else:
