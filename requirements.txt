@@ -1,7 +1,7 @@
-Flask
+flask
 folium
 geopy
 openrouteservice
 pandas
+shapely
 openpyxl
-requests

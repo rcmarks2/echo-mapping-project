@@ -71,6 +71,7 @@ def load_ev_stations():
                 if pd.notna(lat) and pd.notna(lon):
                     ev_stations.append((lat, lon))
     return ev_stations
+
 def generate_diesel_map(start_coord, end_coord):
     coords = [start_coord[::-1], end_coord[::-1]]
     route = client.directions(coords, profile='driving-hgv', format='geojson')
@@ -119,6 +120,15 @@ def generate_ev_map(start_coord, end_coord, max_leg=225):
         folium.CircleMarker(location=(lat, lon), radius=4, color=color, fill=True, fill_color=color).add_to(m)
 
     m.save("static/ev_map.html")
+
+@app.route("/")
+def index():
+    return render_template("index.html")
+
+@app.route("/download")
+def download():
+    return send_file("static/single_route_details.xlsx", as_attachment=True)
+
 if __name__ == "__main__":
-    port = int(os.environ.get("PORT", 5000))  # Required by Render
+    port = int(os.environ.get("PORT", 5000))
     app.run(host="0.0.0.0", port=port)
