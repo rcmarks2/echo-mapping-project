@@ -6,10 +6,10 @@ import requests
 import os
 import folium
 from folium.plugins import BeautifyIcon
+import time
 
 app = Flask(__name__, template_folder="templates", static_folder="static")
 
-# API Keys
 google_api_key = "AIzaSyCIPvsZMeb_NtkuElOooPCE46fB-bJEULg"
 graphhopper_key = "23af8292-46eb-4275-900a-99c729d1952c"
 geolocator = GoogleV3(api_key=google_api_key, timeout=10)
@@ -65,7 +65,6 @@ def generate_ev_map_with_chargers(start_coord, end_coord, start_label, end_label
     used_stations = []
     ev_route_coords = []
     m = folium.Map(location=start_coord, zoom_start=6, tiles="CartoDB positron")
-
     folium.Marker(start_coord, tooltip=start_label, icon=BeautifyIcon(icon_shape='marker')).add_to(m)
     folium.Marker(end_coord, tooltip=end_label, icon=BeautifyIcon(icon_shape='marker')).add_to(m)
 
@@ -95,14 +94,12 @@ def generate_ev_map_with_chargers(start_coord, end_coord, start_label, end_label
     ev_route_coords.extend(final_leg)
     path_points.append(end_coord)
 
-    # Add charger markers
-    for lat, lon in all_stations:
+    for lat, lon in load_ev_stations():
         if (lat, lon) in used_stations:
             folium.CircleMarker(location=(lat, lon), radius=7, color="#2E8B57", fill=True, fill_color="#2E8B57").add_to(m)
         else:
             folium.CircleMarker(location=(lat, lon), radius=4, color="#888888", fill=True, fill_color="#888888").add_to(m)
 
-    # Draw route
     folium.PolyLine(locations=[(lat, lon) for lon, lat in ev_route_coords],
                     color="#002f6c", weight=5).add_to(m)
     m.save("static/ev_map.html")
@@ -141,7 +138,6 @@ def result():
         miles = calculate_distance(start_coord, end_coord)
         annual_miles = miles * trips
 
-        # Diesel calculations
         diesel_fuel = trips * (miles / mpg) * 3.59
         diesel_maint = miles * (17500 / annual_miles)
         diesel_depr = miles * (16600 / 750000)
@@ -176,6 +172,66 @@ def result():
     except Exception as e:
         return f"<h3>Error: {str(e)}</h3>"
 
+@app.route("/batch-result", methods=["POST"])
+def batch_result():
+    try:
+        file = request.files["excel"]
+        df = pd.read_excel(file)
+        results = []
+
+        for index, row in df.iterrows():
+            try:
+                start_coord = geocode_city_state(row["Start City"], row["Start State"])
+                end_coord = geocode_city_state(row["Destination City"], row["Destination State"])
+                mpg = float(row.get("MPG (Will Default To 9)", 9))
+                trips = int(row["Annual Trips (Minimum 1)"])
+                miles = calculate_distance(start_coord, end_coord)
+                annual_miles = miles * trips
+
+                diesel_cost = trips * (miles / mpg) * 3.59 + miles * (17500 / annual_miles) + miles * (16600 / 750000)
+                diesel_emissions = (annual_miles * 1.617) / 1000
+
+                ev_possible, ev_miles = generate_ev_map_with_chargers(start_coord, end_coord,
+                                                                      f"{row['Start City']}, {row['Start State']}",
+                                                                      f"{row['Destination City']}, {row['Destination State']}")
+                if ev_possible:
+                    ev_annual_miles = ev_miles * trips
+                    ev_cost = (ev_annual_miles / 20.39) * 2.208 + ev_miles * (10500 / ev_annual_miles) + ev_annual_miles * (250000 / 750000)
+                    ev_emissions = (ev_annual_miles * 0.2102) / 1000
+                else:
+                    ev_cost = ev_emissions = "N/A"
+
+                results.append({
+                    "Start City": row["Start City"],
+                    "Start State": row["Start State"],
+                    "Destination City": row["Destination City"],
+                    "Destination State": row["Destination State"],
+                    "Diesel Mileage (1 Trip)": round(miles, 1),
+                    "Annual Trips": trips,
+                    "Diesel Total Mileage": round(annual_miles, 1),
+                    "Diesel Total Cost": round(diesel_cost, 2),
+                    "Diesel Total Emissions": round(diesel_emissions, 2),
+                    "EV Possible?": "Yes" if ev_possible else "No",
+                    "EV Total Cost": round(ev_cost, 2) if isinstance(ev_cost, float) else "N/A",
+                    "EV Total Emissions": round(ev_emissions, 2) if isinstance(ev_emissions, float) else "N/A"
+                })
+
+                time.sleep(1)  # prevent rate limiting
+            except Exception as e:
+                print(f"[Row {index+2}] Error: {e}")
+                continue
+
+        result_df = pd.DataFrame(results)
+        result_df.to_excel("static/route_results_batch.xlsx", index=False)
+        return render_template("batch_result.html", count=len(results))
+    except Exception as e:
+        return f"<h3>Error processing batch file: {str(e)}</h3>"
+
+@app.route("/download-batch")
+def download_batch():
+    return send_file("static/route_results_batch.xlsx", as_attachment=True)
+
 if __name__ == "__main__":
     port = int(os.environ.get("PORT", 5000))
     app.run(host="0.0.0.0", port=port)
+

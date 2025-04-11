@@ -8,185 +8,97 @@
         body {
             font-family: 'Roboto', sans-serif;
             background-color: #f4f7f9;
+            color: #002f6c;
             margin: 0;
             padding: 0;
-            color: #002f6c;
         }
-
         .header {
             background-color: #002f6c;
-            color: #fff;
+            color: white;
             padding: 25px;
             text-align: center;
-            position: relative;
         }
-
-        .header img.echo-logo {
-            position: absolute;
-            right: 25px;
-            top: 50%;
-            transform: translateY(-50%);
-            height: 50px;
-        }
-
-        h1 {
-            margin: 0;
-            font-size: 34px;
-        }
-
-        h2 {
-            color: #002f6c;
-        }
-
         .container {
             max-width: 800px;
             margin: 40px auto;
+            background-color: white;
             padding: 30px;
-            background-color: #ffffff;
             border-radius: 8px;
-            box-shadow: 0 6px 12px rgba(0,0,0,0.1);
+            box-shadow: 0 4px 12px rgba(0,0,0,0.1);
         }
-
+        h2 {
+            margin-top: 0;
+            color: #002f6c;
+        }
         form {
-            display: flex;
-            flex-direction: column;
-        }
-
-        label {
             margin-top: 20px;
+        }
+        label {
+            display: block;
+            margin: 12px 0 6px;
             font-weight: bold;
         }
-
-        input[type="text"], input[type="number"], input[type="file"] {
+        input[type="text"],
+        input[type="number"],
+        input[type="file"] {
+            width: 100%;
             padding: 10px;
-            margin-top: 5px;
+            margin-bottom: 12px;
             border: 1px solid #ccc;
-            border-radius: 6px;
-            font-size: 16px;
+            border-radius: 4px;
         }
-
         button {
-            margin-top: 25px;
-            padding: 12px;
-            font-size: 16px;
-            background-color: #4CAF50;
+            background-color: #002f6c;
             color: white;
             border: none;
+            padding: 12px 18px;
+            font-size: 16px;
             border-radius: 6px;
             cursor: pointer;
-            font-weight: bold;
+            margin-top: 10px;
         }
-
         button:hover {
-            background-color: #3d8c40;
+            background-color: #00509e;
         }
-
-        .section-divider {
-            margin: 50px 0 30px;
-            border-top: 2px dashed #ccc;
-            text-align: center;
-            font-weight: bold;
-            font-size: 20px;
-            color: #999;
-            position: relative;
-        }
-
-        .section-divider span {
-            background-color: #f4f7f9;
-            padding: 0 15px;
-            position: relative;
-            top: -14px;
-        }
-
-        .note {
-            font-size: 14px;
-            color: #444;
-            margin-top: 10px;
-        }
-
-        .note strong {
-            display: block;
-            margin-top: 10px;
-        }
-
-        footer {
-            text-align: center;
-            margin-top: 60px;
-            font-size: 14px;
-            color: #aaa;
-        }
-
-        .uiuc-logo {
-            position: fixed;
-            bottom: 15px;
-            left: 15px;
-            height: 50px;
-        }
-
-        @media (max-width: 900px) {
-            .container {
-                margin: 20px;
-            }
+        .section {
+            margin-bottom: 60px;
         }
     </style>
 </head>
 <body>
-
     <div class="header">
         <h1>Echo Route Planner</h1>
-        <img src="{{ url_for('static', filename='echo_logo.png') }}" alt="Echo Logo" class="echo-logo">
     </div>
-
     <div class="container">
-        <!-- Single Route Form -->
-        <form action="/result" method="post">
-            <h2>Plan Single Route</h2>
+        <!-- Single Route Section -->
+        <div class="section">
+            <h2>Plan a Single Route</h2>
+            <form action="/result" method="post">
+                <label for="start">Start Location (City, State):</label>
+                <input type="text" name="start" placeholder="e.g. Baltimore, MD" required>
 
-            <label for="start">Start Location:</label>
-            <input type="text" name="start" id="start" required>
+                <label for="end">End Location (City, State):</label>
+                <input type="text" name="end" placeholder="e.g. Boston, MA" required>
 
-            <label for="end">End Location:</label>
-            <input type="text" name="end" id="end" required>
+                <label for="mpg">MPG (Optional, default is 9):</label>
+                <input type="number" name="mpg" step="0.1">
 
-            <label for="mpg">Miles per Gallon (optional):</label>
-            <input type="number" name="mpg" step="0.1" placeholder="Default is 9 mpg">
+                <label for="annual_trips">Annual Trips:</label>
+                <input type="number" name="annual_trips" min="1" required>
 
-            <label for="annual_trips">Number of Annual Trips:</label>
-            <input type="number" name="annual_trips" min="1" required>
-            <div class="note">* Minimum of 1 Annual Trip is required</div>
+                <button type="submit">Generate Single Route</button>
+            </form>
+        </div>
 
-            <button type="submit">Generate Route</button>
-        </form>
-
-        <!-- Divider -->
-        <div class="section-divider"><span>OR</span></div>
-
-        <!-- Batch Upload Form -->
-        <form action="/batch-result" method="post" enctype="multipart/form-data">
-            <h2>Upload Excel File for Multiple Routes</h2>
-
-            <label for="excel">Upload Excel File:</label>
-            <input type="file" name="excel" id="excel" accept=".xlsx" required>
-
-            <div class="note">
-                <strong>Your Excel file must have the following column headers (case-sensitive) in this exact order:</strong>
-                1. <code>Start City</code><br>
-                2. <code>Start State</code><br>
-                3. <code>Destination City</code><br>
-                4. <code>Destination State</code><br>
-                5. <code>MPG (Will Default To 9)</code> (optional)<br>
-                6. <code>Annual Trips (Minimum 1)</code> (required)
-            </div>
-
-            <button type="submit">Upload & Process Routes</button>
-        </form>
+        <!-- Batch Upload Section -->
+        <div class="section">
+            <h2>Upload Batch Routes (Excel)</h2>
+            <form action="/batch-result" method="post" enctype="multipart/form-data">
+                <label for="excel">Upload Excel (.xlsx):</label>
+                <input type="file" name="excel" accept=".xlsx" required>
+                <button type="submit">Upload and Process Batch</button>
+            </form>
+        </div>
     </div>
-
-    <footer>
-        &copy; {{ year }} Echo Global Logistics. All rights reserved.
-    </footer>
-
-    <img src="{{ url_for('static', filename='uiuc_logo.png') }}" alt="UIUC Logo" class="uiuc-logo">
-
 </body>
 </html>
