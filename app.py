@@ -1,6 +1,5 @@
 from flask import Flask, render_template, request, send_file
 from geopy.geocoders import GoogleV3
-from geopy.distance import geodesic
 import pandas as pd
 import requests
 import os
@@ -11,7 +10,6 @@ from openpyxl.utils import get_column_letter
 app = Flask(__name__, template_folder="templates", static_folder="static")
 
 google_api_key = "AIzaSyCIPvsZMeb_NtkuElOooPCE46fB-bJEULg"
-ors_key = "5b3ce3597851110001cf62484c21171bb42b5156136eb3b6c86735ceb936e6d856184e15bb72367f"
 geolocator = GoogleV3(api_key=google_api_key, timeout=10)
 
 def geocode_city_state(city, state):
@@ -20,41 +18,23 @@ def geocode_city_state(city, state):
         raise ValueError(f"Could not geocode {city}, {state}")
     return (location.latitude, location.longitude)
 
-def calculate_distance(a, b):
-    return geodesic(a, b).miles
-
-def get_openroute_path(start, end):
-    def query_ors(profile):
-        url = f"https://api.openrouteservice.org/v2/directions/{profile}"
-        headers = {
-            "Authorization": ors_key,
-            "Content-Type": "application/json"
-        }
-        body = {
-            "coordinates": [[start[1], start[0]], [end[1], end[0]]]
-        }
-        response = requests.post(url, json=body, headers=headers)
-        if response.status_code == 200:
-            data = response.json()
-            if "features" in data and data["features"]:
-                return data["features"][0]["geometry"]["coordinates"]
-        return None
-
-    route = query_ors("driving-hgv")
-    if not route:
-        print("⚠️ driving-hgv failed, retrying with driving-car...")
-        route = query_ors("driving-car")
-    if not route:
-        raise ValueError(f"No route found (empty features) between {start} and {end}")
-    return route
-
-def calculate_total_route_mileage(route_coords):
-    total_miles = 0
-    for i in range(len(route_coords) - 1):
-        a = (route_coords[i][1], route_coords[i][0])
-        b = (route_coords[i + 1][1], route_coords[i + 1][0])
-        total_miles += calculate_distance(a, b)
-    return total_miles
+def get_google_miles(start, end):
+    url = "https://maps.googleapis.com/maps/api/directions/json"
+    params = {
+        "origin": f"{start[0]},{start[1]}",
+        "destination": f"{end[0]},{end[1]}",
+        "key": google_api_key
+    }
+    response = requests.get(url, params=params)
+    if response.status_code == 200:
+        data = response.json()
+        if data["routes"]:
+            meters = data["routes"][0]["legs"][0]["distance"]["value"]
+            return meters / 1609.34  # convert meters to miles
+        else:
+            raise ValueError(f"No route found between {start} and {end}")
+    else:
+        raise ValueError(f"Google Directions API error: {response.status_code}")
 
 @app.route("/")
 def index():
@@ -73,8 +53,7 @@ def result():
         start_coord = geocode_city_state(start_city.strip(), start_state.strip())
         end_coord = geocode_city_state(end_city.strip(), end_state.strip())
 
-        diesel_route = get_openroute_path(start_coord, end_coord)
-        diesel_miles = calculate_total_route_mileage(diesel_route)
+        diesel_miles = get_google_miles(start_coord, end_coord)
         diesel_annual_miles = diesel_miles * trips
         diesel_cost = trips * (diesel_miles / mpg) * 3.59 + diesel_miles * (17500 / diesel_annual_miles) + diesel_annual_miles * (16600 / 750000)
         diesel_emissions = (diesel_annual_miles * 1.617) / 1000
@@ -120,8 +99,7 @@ def batch_result():
                 if trips <= 0:
                     continue
 
-                diesel_route = get_openroute_path(start_coord, end_coord)
-                diesel_miles = calculate_total_route_mileage(diesel_route)
+                diesel_miles = get_google_miles(start_coord, end_coord)
                 if diesel_miles <= 0:
                     continue
 
@@ -151,7 +129,6 @@ def batch_result():
                 print(f"Skipping row {index + 2} due to error: {row_error}")
                 continue
 
-        # Apply Echo-style formatting
         header_fill = PatternFill(start_color="003366", end_color="003366", fill_type="solid")
         header_font = Font(color="FFFFFF", bold=True)
         for col in range(1, len(headers) + 1):
@@ -161,7 +138,6 @@ def batch_result():
             cell.alignment = Alignment(horizontal="center", vertical="center")
             ws.column_dimensions[get_column_letter(col)].width = 18
 
-        # Conditional formatting for "EV Possible?"
         for row in range(2, ws.max_row + 1):
             cell = ws.cell(row=row, column=10)
             if cell.value == "Yes":
