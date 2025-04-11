@@ -1,4 +1,3 @@
-
 from flask import Flask, render_template, request, send_file
 from geopy.geocoders import GoogleV3
 from geopy.distance import geodesic
@@ -39,7 +38,7 @@ def get_openroute_path(start, end):
         if "features" in data and data["features"]:
             return data["features"][0]["geometry"]["coordinates"]
         else:
-            raise ValueError("No route found (empty features)")
+            raise ValueError(f"No route found (empty features) between {start} and {end}")
     else:
         raise ValueError(f"ORS error: {response.status_code} → {response.text}")
 
@@ -62,13 +61,16 @@ def result():
         end_city, end_state = request.form["end"].split(",")
         mpg = float(request.form.get("mpg") or 9.0)
         trips = int(request.form["annual_trips"])
+        if trips <= 0:
+            raise ValueError("Annual trips must be greater than 0")
+
         start_coord = geocode_city_state(start_city.strip(), start_state.strip())
         end_coord = geocode_city_state(end_city.strip(), end_state.strip())
 
         diesel_route = get_openroute_path(start_coord, end_coord)
         diesel_miles = calculate_total_route_mileage(diesel_route)
         diesel_annual_miles = diesel_miles * trips
-        diesel_cost = trips * (diesel_miles / mpg) * 3.59 + diesel_miles * (17500 / diesel_annual_miles) + diesel_miles * (16600 / 750000)
+        diesel_cost = trips * (diesel_miles / mpg) * 3.59 + diesel_miles * (17500 / diesel_annual_miles) + diesel_annual_miles * (16600 / 750000)
         diesel_emissions = (diesel_annual_miles * 1.617) / 1000
 
         return render_template("result.html",
@@ -107,6 +109,9 @@ def batch_result():
         for index, row in df.iterrows():
             diesel_miles = row.get("Diesel Mileage (1 Trip)", 0)
             trips = row.get("Annual Trips", 1)
+            if trips <= 0 or diesel_miles <= 0:
+                continue
+
             diesel_total_miles = diesel_miles * trips
             diesel_cost = trips * (diesel_miles / 9) * 3.59 + diesel_miles * (17500 / diesel_total_miles) + diesel_total_miles * (16600 / 750000)
             diesel_emissions = (diesel_total_miles * 1.617) / 1000
@@ -130,7 +135,7 @@ def batch_result():
                 round(ev_emissions, 2) if ev_possible == "Yes" else "N/A"
             ])
 
-        # Apply Echo styling
+        # Apply styling
         header_fill = PatternFill(start_color="003366", end_color="003366", fill_type="solid")
         header_font = Font(color="FFFFFF", bold=True)
         for col in range(1, len(headers) + 1):
@@ -140,7 +145,7 @@ def batch_result():
             cell.alignment = Alignment(horizontal="center", vertical="center")
             ws.column_dimensions[get_column_letter(col)].width = 18
 
-        # Conditional formatting for EV Possible?
+        # EV conditional formatting
         for row in range(2, ws.max_row + 1):
             cell = ws.cell(row=row, column=10)
             if cell.value == "Yes":
