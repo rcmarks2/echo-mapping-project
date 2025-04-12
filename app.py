@@ -157,12 +157,12 @@ def batch_result():
 
         for i, row in enumerate(df.itertuples(index=False), start=3):
             try:
-                start_city = getattr(row, "Start City").strip()
-                start_state = getattr(row, "Start State").strip()
-                dest_city = getattr(row, "Destination City").strip()
-                dest_state = getattr(row, "Destination State").strip()
-                mpg = getattr(row, "MPG (Will Default To 9)", 9) or 9
-                trips = max(getattr(row, "Annual Trips (Minimum 1)", 1), 1)
+                start_city = getattr(row, "Start_City").strip()
+                start_state = getattr(row, "Start_State").strip()
+                dest_city = getattr(row, "Destination_City").strip()
+                dest_state = getattr(row, "Destination_State").strip()
+                mpg = getattr(row, "MPG_Will_Default_To_9", 9) or 9
+                trips = max(getattr(row, "Annual_Trips_Minimum_1", 1), 1)
 
                 start = geocode_city_state(start_city, start_state)
                 end = geocode_city_state(dest_city, dest_state)
