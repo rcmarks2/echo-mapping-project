@@ -187,6 +187,8 @@ def batch_result():
         return render_template('batch_result.html', excel_download='/download-batch-excel', txt_download='/download-formulas')
     except Exception as e:
         return f'<h3>Error in batch processing: {e}</h3>'
+
+@app.route("/download-batch-excel")
 def download_batch_excel():
     return send_file("static/fullbatchresult.xlsx", as_attachment=True)
 
