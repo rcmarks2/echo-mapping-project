@@ -185,7 +185,7 @@ def batch_result():
                 output_row = [
                     start_city, start_state, dest_city, dest_state,
                     round(diesel_miles, 1), trips, round(diesel_total, 1),
-                    round(diesel_cost, 2), diesel_emissions,
+                    float(round(diesel_cost, 2)), diesel_emissions,
                     ev_possible
                 ] + ev_fields
 
