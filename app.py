@@ -156,9 +156,6 @@ def batch_result():
         ws = wb.active
 
         for i, (_, row) in enumerate(df.iterrows(), start=3):
-        # Clear previous Diesel Total Cost values in column H
-        for r in range(3, ws.max_row + 1):
-            ws.cell(row=r, column=8).value = None
             try:
                 start_city = row["Start City"].strip()
                 start_state = row["Start State"].strip()
@@ -177,8 +174,10 @@ def batch_result():
                 maintenance_cost = diesel_miles * (17500 / diesel_total)
                 depreciation_cost = diesel_total * (16600 / 750000)
                 diesel_cost = fuel_cost + maintenance_cost + depreciation_cost
-                print(f"DIESEL COST (Route {i}):", diesel_cost)
-                ws.cell(row=i, column=8).value = round(diesel_cost, 2)
+                print(f"Diesel Cost for row {i}:", diesel_cost)
+                cell = ws.cell(row=i, column=8)
+                cell.value = float(round(diesel_cost, 2))
+                cell.number_format = '0.00'
                 diesel_emissions = round(diesel_total * 1.617 / 1000, 2)
 
                 if diesel_miles <= 225:
