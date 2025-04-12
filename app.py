@@ -156,36 +156,43 @@ def batch_result():
         ws = wb.active
 
         for i, row in enumerate(df.itertuples(index=False), start=3):
-            start_city = getattr(row, "Start City", "")
-            start_state = getattr(row, "Start State", "")
-            dest_city = getattr(row, "Destination City", "")
-            dest_state = getattr(row, "Destination State", "")
-            mpg = getattr(row, "MPG (Will Default To 9)", 9) or 9
-            trips = max(getattr(row, "Annual Trips (Minimum 1)", 1), 1)
+            try:
+                start_city = getattr(row, "Start City").strip()
+                start_state = getattr(row, "Start State").strip()
+                dest_city = getattr(row, "Destination City").strip()
+                dest_state = getattr(row, "Destination State").strip()
+                mpg = getattr(row, "MPG (Will Default To 9)", 9) or 9
+                trips = max(getattr(row, "Annual Trips (Minimum 1)", 1), 1)
 
-            diesel_miles = 200 if "Springfield" in start_city else 400
-            diesel_total = diesel_miles * trips
-            diesel_cost = trips * (diesel_miles / mpg) * 3.59 + diesel_miles * (17500 / diesel_total) + diesel_total * (16600 / 750000)
-            diesel_emissions = round(diesel_total * 1.617 / 1000, 2)
+                start = geocode_city_state(start_city, start_state)
+                end = geocode_city_state(dest_city, dest_state)
+                _, diesel_miles = get_routed_segment(start, end, return_distance=True)
 
-            if diesel_miles <= 225:
-                ev_possible = "Yes"
-                ev_total = diesel_miles * trips
-                ev_cost = (ev_total / 20.39) * 2.208 + diesel_miles * (10500 / ev_total) + ev_total * (250000 / 750000)
-                ev_emissions = round(ev_total * 0.2102 / 1000, 2)
-                ev_fields = [diesel_miles, ev_total, round(ev_cost, 2), ev_emissions]
-            else:
-                ev_possible = "No"
-                ev_fields = ["N/A"] * 4
+                diesel_total = diesel_miles * trips
+                diesel_cost = trips * (diesel_miles / mpg) * 3.59 + diesel_miles * (17500 / diesel_total) + diesel_total * (16600 / 750000)
+                diesel_emissions = round(diesel_total * 1.617 / 1000, 2)
 
-            output_row = [
-                start_city, start_state, dest_city, dest_state,
-                diesel_miles, trips, diesel_total, round(diesel_cost, 2), diesel_emissions,
-                ev_possible
-            ] + ev_fields
+                if diesel_miles <= 225:
+                    ev_possible = "Yes"
+                    ev_total = diesel_miles * trips
+                    ev_cost = (ev_total / 20.39) * 2.208 + diesel_miles * (10500 / ev_total) + ev_total * (250000 / 750000)
+                    ev_emissions = round(ev_total * 0.2102 / 1000, 2)
+                    ev_fields = [round(diesel_miles, 1), round(ev_total, 1), round(ev_cost, 2), ev_emissions]
+                else:
+                    ev_possible = "No"
+                    ev_fields = ["N/A"] * 4
 
-            for col, val in enumerate(output_row, start=1):
-                ws.cell(row=i, column=col).value = val
+                output_row = [
+                    start_city, start_state, dest_city, dest_state,
+                    round(diesel_miles, 1), trips, round(diesel_total, 1),
+                    round(diesel_cost, 2), diesel_emissions,
+                    ev_possible
+                ] + ev_fields
+
+                for col, val in enumerate(output_row, start=1):
+                    ws.cell(row=i, column=col).value = val
+            except Exception as row_err:
+                ws.cell(row=i, column=1).value = f"Error: {str(row_err)}"
 
         wb.save("static/fullbatchresult.xlsx")
 
