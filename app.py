@@ -166,7 +166,10 @@ def batch_result():
                     ev_possible = 'No'
                     ev_total = ev_cost = ev_emissions = 'N/A'
                 output = [
-                    start_city, start_state, dest_city, dest_state,
+                    start_city,
+                    start_state,
+                    dest_city,
+                    dest_state,
                     round(diesel_miles, 1),
                     trips,
                     mpg,
