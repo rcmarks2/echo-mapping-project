@@ -4,7 +4,6 @@ import pandas as pd
 import folium
 import requests
 import os
-from shapely.geometry import Point
 from geopy.distance import geodesic
 from openpyxl import load_workbook
 import polyline
@@ -39,8 +38,8 @@ def get_routed_segment(start, end, return_distance=False):
         "X-Goog-FieldMask": "routes.polyline.encodedPolyline,routes.distanceMeters"
     }
     body = {
-        "origin": {"location": {"latLng": {"latitude": start[0], "longitude": start[1]}}}, 
-        "destination": {"location": {"latLng": {"latitude": end[0], "longitude": end[1]}}}, 
+        "origin": {"location": {"latLng": {"latitude": start[0], "longitude": start[1]}}},
+        "destination": {"location": {"latLng": {"latitude": end[0], "longitude": end[1]}}},
         "travelMode": "DRIVE"
     }
     response = requests.post(url, json=body, headers=headers)
@@ -153,7 +152,6 @@ def batch_result():
 
         df = pd.read_excel(uploaded_file)
 
-        # Load template
         wb = load_workbook("static/uploadtemplate.xlsx")
         ws = wb.active
 
@@ -189,7 +187,7 @@ def batch_result():
             for j, value in enumerate(row_data, start=1):
                 ws.cell(row=i, column=j).value = value
 
-        wb.save("static/batch_results.xlsx")
+        wb.save("static/fullbatchresult.xlsx")
 
         return render_template(
             "batch_result.html",
@@ -201,7 +199,11 @@ def batch_result():
 
 @app.route("/download-batch-excel")
 def download_batch_excel():
-    return send_file("static/batch_results.xlsx", as_attachment=True)
+    path = "static/fullbatchresult.xlsx"
+    if os.path.exists(path):
+        return send_file(path, as_attachment=True)
+    else:
+        return "<h3>Excel file not found. Please process your batch file first.</h3>"
 
 @app.route("/download-formulas")
 def download_formulas():

@@ -2,13 +2,13 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <title>Batch Route Results - Echo Global</title>
+    <title>Batch Route Results</title>
     <style>
         body {
             font-family: 'Segoe UI', sans-serif;
-            margin: 0;
             background-color: #ffffff;
-            color: #003366;
+            margin: 0;
+            padding: 0;
         }
 
         .banner {
@@ -20,7 +20,7 @@
 
         .banner h1 {
             margin: 0;
-            font-size: 26px;
+            font-size: 28px;
         }
 
         .logo-echo {
@@ -39,38 +39,33 @@
 
         .container {
             max-width: 800px;
-            margin: 40px auto;
+            margin: 60px auto;
             padding: 20px;
-        }
-
-        .message {
-            background-color: #f2f2f2;
-            padding: 20px;
-            font-size: 18px;
-            border-radius: 10px;
-            margin-bottom: 40px;
             text-align: center;
         }
 
-        .buttons {
-            display: flex;
-            gap: 20px;
-            justify-content: center;
-            flex-wrap: wrap;
+        h2 {
+            color: #003366;
+            margin-bottom: 30px;
         }
 
-        .download-btn {
-            background-color: #28a745;
-            color: white;
-            font-size: 16px;
-            padding: 12px 24px;
-            border: none;
-            border-radius: 6px;
-            cursor: pointer;
+        a.button {
             text-decoration: none;
         }
 
-        .download-btn:hover {
+        .button {
+            display: inline-block;
+            background-color: #28a745;
+            color: white;
+            font-size: 16px;
+            padding: 12px 30px;
+            border: none;
+            border-radius: 6px;
+            cursor: pointer;
+            margin: 15px;
+        }
+
+        .button:hover {
             background-color: #218838;
         }
     </style>
@@ -78,21 +73,17 @@
 <body>
 
     <div class="banner">
-        <h1>Batch Route Results</h1>
+        <h1>Echo Global Batch Results</h1>
         <img class="logo-echo" src="/static/echo_logo.png" alt="Echo Logo">
     </div>
 
     <img class="logo-illinois" src="/static/uiuc_logo.png" alt="Illinois Logo">
 
     <div class="container">
-        <div class="message">
-            <strong>Success:</strong> {{ count }} routes were processed successfully.
-        </div>
+        <h2>Your Batch Route Results Are Ready</h2>
 
-        <div class="buttons">
-            <a class="download-btn" href="/download-batch">Download Excel File</a>
-            <a class="download-btn" href="/download-formulas">Download Formulas</a>
-        </div>
+        <a href="{{ excel_download }}" class="button">Download Excel File</a>
+        <a href="{{ txt_download }}" class="button">Download Formulas</a>
     </div>
 
 </body>
