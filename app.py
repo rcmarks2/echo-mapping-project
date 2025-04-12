@@ -9,6 +9,7 @@ from geopy.distance import geodesic
 from openpyxl import Workbook
 from openpyxl.styles import PatternFill, Font, Alignment
 from openpyxl.utils import get_column_letter
+import polyline
 
 app = Flask(__name__, template_folder="templates", static_folder="static")
 
@@ -45,7 +46,7 @@ def get_diesel_miles(start, end):
         data = response.json()
         if "routes" in data and data["routes"]:
             meters = data["routes"][0]["distanceMeters"]
-            return meters / 1609.34  # meters to miles
+            return meters / 1609.34
         else:
             raise ValueError("No diesel route found")
     else:
@@ -81,7 +82,7 @@ def get_routed_segment(start, end):
     headers = {
         "Content-Type": "application/json",
         "X-Goog-Api-Key": google_api_key,
-        "X-Goog-FieldMask": "routes.legs.steps.polyline.encodedPolyline"
+        "X-Goog-FieldMask": "routes.polyline.encodedPolyline"
     }
     body = {
         "origin": {"location": {"latLng": {"latitude": start[0], "longitude": start[1]}}},
@@ -92,34 +93,20 @@ def get_routed_segment(start, end):
     if response.status_code == 200:
         data = response.json()
         if "routes" in data and data["routes"]:
-            coords = []
-            for step in data["routes"][0]["legs"][0]["steps"]:
-                polyline = step["polyline"]["encodedPolyline"]
-                coords.extend(decode_polyline(polyline))
-            return coords
-        else:
-            return []
-    else:
-        return []
+            encoded = data["routes"][0]["polyline"]["encodedPolyline"]
+            return polyline.decode(encoded)
+    return []
 
-def decode_polyline(encoded):
-    import polyline
-    return polyline.decode(encoded)
 def generate_map(route_coords, used_chargers, all_chargers, label):
     m = folium.Map(location=route_coords[0], zoom_start=6, tiles="cartodbpositron")
-
     for coord in all_chargers:
         folium.CircleMarker(location=coord, radius=4, color="gray", fill=True, fill_opacity=0.6).add_to(m)
-
     for coord in used_chargers:
         folium.CircleMarker(location=coord, radius=6, color="#00cc44", fill=True, fill_opacity=1).add_to(m)
-
     folium.Marker(route_coords[0], popup="Start", icon=folium.DivIcon(html=f"<b>{label[0]}</b>")).add_to(m)
     folium.Marker(route_coords[-1], popup="End", icon=folium.DivIcon(html=f"<b>{label[1]}</b>")).add_to(m)
-
     folium.PolyLine(route_coords, color="blue", weight=4).add_to(m)
     return m._repr_html_()
-
 @app.route("/result", methods=["POST"])
 def result():
     try:
