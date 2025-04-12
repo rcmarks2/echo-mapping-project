@@ -19,22 +19,27 @@ def geocode_city_state(city, state):
     return (location.latitude, location.longitude)
 
 def get_google_miles(start, end):
-    url = "https://maps.googleapis.com/maps/api/directions/json"
-    params = {
-        "origin": f"{start[0]},{start[1]}",
-        "destination": f"{end[0]},{end[1]}",
-        "key": google_api_key
+    url = "https://routes.googleapis.com/directions/v2:computeRoutes"
+    headers = {
+        "Content-Type": "application/json",
+        "X-Goog-Api-Key": google_api_key,
+        "X-Goog-FieldMask": "routes.distanceMeters"
     }
-    response = requests.get(url, params=params)
+    body = {
+        "origin": {"location": {"latLng": {"latitude": start[0], "longitude": start[1]}}},
+        "destination": {"location": {"latLng": {"latitude": end[0], "longitude": end[1]}}},
+        "travelMode": "DRIVE"
+    }
+    response = requests.post(url, json=body, headers=headers)
     if response.status_code == 200:
         data = response.json()
-        if data["routes"]:
-            meters = data["routes"][0]["legs"][0]["distance"]["value"]
-            return meters / 1609.34  # convert meters to miles
+        if "routes" in data and data["routes"]:
+            meters = data["routes"][0]["distanceMeters"]
+            return meters / 1609.34  # convert to miles
         else:
             raise ValueError(f"No route found between {start} and {end}")
     else:
-        raise ValueError(f"Google Directions API error: {response.status_code}")
+        raise ValueError(f"Google Routes API error: {response.status_code}")
 
 @app.route("/")
 def index():
