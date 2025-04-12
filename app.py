@@ -149,7 +149,7 @@ def result():
         return f"<h3>Error in single route: {e}</h3>"
 
 @app.route("/batch-result", methods=["POST"])
-# Updated: Ensure diesel cost formula is applied and indentation is correct
+print("🟢 Running FINAL version with clean diesel cost logic.")
 def batch_result():
     try:
         uploaded_file = request.files["excel"]
