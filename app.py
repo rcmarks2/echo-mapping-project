@@ -6,10 +6,7 @@ import requests
 import os
 from shapely.geometry import Point
 from geopy.distance import geodesic
-from openpyxl import Workbook
-from openpyxl.styles import PatternFill, Font, Alignment
-from openpyxl.utils import get_column_letter
-from openpyxl.formatting.rule import FormulaRule
+from openpyxl import load_workbook
 import polyline
 
 app = Flask(__name__, template_folder="templates", static_folder="static")
@@ -156,12 +153,9 @@ def batch_result():
 
         df = pd.read_excel(uploaded_file)
 
-        columns = [
-            "Start City", "Start State", "Destination City", "Destination State",
-            "Diesel Mileage (1 Trip)", "Annual Trips", "Diesel Total Mileage",
-            "Diesel Total Cost", "Diesel Total Emissions", "EV Possible?",
-            "EV Mileage (1 Trip)", "EV Total Mileage", "EV Total Cost", "EV Total Emissions"
-        ]
+        # Load your template
+        wb = load_workbook("static/fullbatchresult.xlsx")
+        ws = wb.active
 
         results = []
         for _, row in df.iterrows():
@@ -191,39 +185,13 @@ def batch_result():
                     "No", "N/A", "N/A", "N/A", "N/A"
                 ])
 
-        wb = Workbook()
-        ws = wb.active
-        ws.title = "Batch Results"
+        # Write into the preformatted Excel
+        for i, row_data in enumerate(results, start=2):
+            for j, value in enumerate(row_data, start=1):
+                ws.cell(row=i, column=j).value = value
 
-        header_font = Font(bold=True, color="FFFFFF")
-        header_fill = PatternFill(start_color="003366", end_color="003366", fill_type="solid")
-        center_align = Alignment(horizontal="center", vertical="center")
-
-        for col_num, column_title in enumerate(columns, 1):
-            cell = ws.cell(row=1, column=col_num, value=column_title)
-            cell.font = header_font
-            cell.fill = header_fill
-            cell.alignment = center_align
-            ws.column_dimensions[cell.column_letter].width = 18
-
-        for row_num, row_data in enumerate(results, 2):
-            for col_num, cell_value in enumerate(row_data, 1):
-                cell = ws.cell(row=row_num, column=col_num, value=cell_value)
-                cell.alignment = center_align
-
-        yes_range = f"J2:J{len(results)+1}"
-        green_fill = PatternFill(start_color="C6EFCE", end_color="C6EFCE", fill_type="solid")
-        red_fill = PatternFill(start_color="FFC7CE", end_color="FFC7CE", fill_type="solid")
-
-        ws.conditional_formatting.add(yes_range, FormulaRule(formula=['EXACT(J2,"Yes")'], stopIfTrue=True, fill=green_fill))
-        ws.conditional_formatting.add(yes_range, FormulaRule(formula=['EXACT(J2,"No")'], stopIfTrue=True, fill=red_fill))
-
-        excel_output_path = "static/batch_results.xlsx"
-        wb.save(excel_output_path)
-
-        txt_output_path = "static/formulas.txt"
-        with open(txt_output_path, "w") as f:
-            f.write("Formula reference goes here...")
+        output_path = "static/batch_results.xlsx"
+        wb.save(output_path)
 
         return render_template(
             "batch_result.html",
