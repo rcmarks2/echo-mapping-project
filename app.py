@@ -178,7 +178,7 @@ def batch_result():
                 else:
                     ev_possible = 'No'
                     ev_total = ev_cost = ev_emissions = 'N/A'
-                values = [
+                output = [
                     start_city, start_state, dest_city, dest_state,
                     round(diesel_miles, 1), trips, round(diesel_total, 1),
                     round(diesel_cost, 2), diesel_emissions, ev_possible,
@@ -187,10 +187,10 @@ def batch_result():
                     round(ev_cost, 2) if ev_possible == 'Yes' else 'N/A',
                     ev_emissions if ev_possible == 'Yes' else 'N/A'
                 ]
-                for col, val in enumerate(values, start=1):
+                for col, val in enumerate(output, start=1):
                     ws.cell(row=i, column=col).value = val
-            except Exception as err:
-                ws.cell(row=i, column=1).value = f'Error: {str(err)}'
+            except Exception as row_err:
+                ws.cell(row=i, column=1).value = f'Error: {str(row_err)}'
         wb.save('static/fullbatchresult.xlsx')
         return render_template('batch_result.html', excel_download='/download-batch-excel', txt_download='/download-formulas')
     except Exception as e:
