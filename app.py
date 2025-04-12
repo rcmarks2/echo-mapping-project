@@ -69,6 +69,17 @@ def build_ev_path(start, end):
         current = next_stop
     return True
 
+def generate_map(route_coords, used_chargers, all_chargers, label):
+    m = folium.Map(location=route_coords[0], zoom_start=6, tiles="cartodbpositron")
+    for coord in all_chargers:
+        folium.CircleMarker(location=coord, radius=4, color="gray", fill=True, fill_opacity=0.6).add_to(m)
+    for coord in used_chargers:
+        folium.CircleMarker(location=coord, radius=6, color="#00cc44", fill=True, fill_opacity=1).add_to(m)
+    folium.Marker(route_coords[0], popup="Start", icon=folium.DivIcon(html=f"<b>{label[0]}</b>")).add_to(m)
+    folium.Marker(route_coords[-1], popup="End", icon=folium.DivIcon(html=f"<b>{label[1]}</b>")).add_to(m)
+    folium.PolyLine(route_coords, color="blue", weight=4).add_to(m)
+    return m._repr_html_()
+
 @app.route("/result", methods=["POST"])
 def result():
     try:
@@ -85,10 +96,8 @@ def result():
         diesel_cost = trips * (diesel_miles / mpg) * 3.59 + diesel_miles * (17500 / diesel_total) + diesel_total * (16600 / 750000)
         diesel_emissions = (diesel_total * 1.617) / 1000
         diesel_map = generate_map(diesel_coords, [], [], (f"{start_city.strip()}, {start_state.strip()}", f"{end_city.strip()}, {end_state.strip()}"))
-        ev_possible, ev_stops = build_ev_path(start, end), []
+        ev_possible = build_ev_path(start, end)
         if ev_possible:
-            routed_coords = []
-            total_ev_miles = 0
             ev_stops = [start]
             current = start
             while geodesic(current, end).miles > 225:
@@ -98,6 +107,8 @@ def result():
                         current = station
                         break
             ev_stops.append(end)
+            routed_coords = []
+            total_ev_miles = 0
             for i in range(len(ev_stops) - 1):
                 leg_coords, leg_miles = get_routed_segment(ev_stops[i], ev_stops[i + 1], return_distance=True)
                 routed_coords.extend(leg_coords)
@@ -153,7 +164,6 @@ def batch_result():
                 ev_possible = "Yes" if build_ev_path(start, end) else "No"
                 ev_miles = round(diesel_miles, 1) if ev_possible == "Yes" else "N/A"
 
-                # Write columns A–H only
                 ws.cell(row=i + 3, column=1).value = start_city
                 ws.cell(row=i + 3, column=2).value = start_state
                 ws.cell(row=i + 3, column=3).value = dest_city
