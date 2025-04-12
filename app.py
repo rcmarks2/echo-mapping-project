@@ -16,7 +16,6 @@ app = Flask(__name__, template_folder="templates", static_folder="static")
 google_api_key = "AIzaSyCIPvsZMeb_NtkuElOooPCE46fB-bJEULg"
 geolocator = GoogleV3(api_key=google_api_key, timeout=10)
 
-# Home route
 @app.route("/")
 def index():
     return render_template("index.html")
@@ -34,12 +33,12 @@ def geocode_city_state(city, state):
         raise ValueError(f"Could not geocode {city}, {state}")
     return (location.latitude, location.longitude)
 
-def get_diesel_miles(start, end):
+def get_routed_segment(start, end, return_distance=False):
     url = "https://routes.googleapis.com/directions/v2:computeRoutes"
     headers = {
         "Content-Type": "application/json",
         "X-Goog-Api-Key": google_api_key,
-        "X-Goog-FieldMask": "routes.distanceMeters"
+        "X-Goog-FieldMask": "routes.polyline.encodedPolyline,routes.distanceMeters"
     }
     body = {
         "origin": {"location": {"latLng": {"latitude": start[0], "longitude": start[1]}}},
@@ -50,12 +49,13 @@ def get_diesel_miles(start, end):
     if response.status_code == 200:
         data = response.json()
         if "routes" in data and data["routes"]:
-            meters = data["routes"][0]["distanceMeters"]
-            return meters / 1609.34
-        else:
-            raise ValueError("No diesel route found")
-    else:
-        raise ValueError("Diesel routing API error")
+            encoded = data["routes"][0]["polyline"]["encodedPolyline"]
+            coords = polyline.decode(encoded)
+            if return_distance:
+                meters = data["routes"][0]["distanceMeters"]
+                return coords, meters / 1609.34
+            return coords
+    return [] if not return_distance else ([], 0)
 
 def build_ev_path(start, end):
     if geodesic(start, end).miles <= 225:
@@ -82,26 +82,6 @@ def build_ev_path(start, end):
     ev_path.append(end)
     return True, ev_path
 
-def get_routed_segment(start, end):
-    url = "https://routes.googleapis.com/directions/v2:computeRoutes"
-    headers = {
-        "Content-Type": "application/json",
-        "X-Goog-Api-Key": google_api_key,
-        "X-Goog-FieldMask": "routes.polyline.encodedPolyline"
-    }
-    body = {
-        "origin": {"location": {"latLng": {"latitude": start[0], "longitude": start[1]}}},
-        "destination": {"location": {"latLng": {"latitude": end[0], "longitude": end[1]}}},
-        "travelMode": "DRIVE"
-    }
-    response = requests.post(url, json=body, headers=headers)
-    if response.status_code == 200:
-        data = response.json()
-        if "routes" in data and data["routes"]:
-            encoded = data["routes"][0]["polyline"]["encodedPolyline"]
-            return polyline.decode(encoded)
-    return []
-
 def generate_map(route_coords, used_chargers, all_chargers, label):
     m = folium.Map(location=route_coords[0], zoom_start=6, tiles="cartodbpositron")
     for coord in all_chargers:
@@ -125,24 +105,25 @@ def result():
         start = geocode_city_state(start_city.strip(), start_state.strip())
         end = geocode_city_state(end_city.strip(), end_state.strip())
 
-        # Diesel calculations
-        diesel_miles = get_diesel_miles(start, end)
+        # Diesel route and mileage (with road routing)
+        diesel_coords, diesel_miles = get_routed_segment(start, end, return_distance=True)
         diesel_total = diesel_miles * trips
         diesel_cost = trips * (diesel_miles / mpg) * 3.59 + diesel_miles * (17500 / diesel_total) + diesel_total * (16600 / 750000)
         diesel_emissions = (diesel_total * 1.617) / 1000
-
-        diesel_map = generate_map([start, end], [], [], (f"{start_city.strip()}, {start_state.strip()}", f"{end_city.strip()}, {end_state.strip()}"))
+        diesel_map = generate_map(diesel_coords, [], [], (f"{start_city.strip()}, {start_state.strip()}", f"{end_city.strip()}, {end_state.strip()}"))
 
         # EV segmented routing
         ev_possible, ev_stops = build_ev_path(start, end)
         if ev_possible:
             routed_coords = []
+            total_ev_miles = 0
             for i in range(len(ev_stops) - 1):
-                leg = get_routed_segment(ev_stops[i], ev_stops[i + 1])
-                routed_coords.extend(leg)
+                leg_coords, leg_miles = get_routed_segment(ev_stops[i], ev_stops[i + 1], return_distance=True)
+                routed_coords.extend(leg_coords)
+                total_ev_miles += leg_miles
 
-            ev_total = geodesic(start, end).miles * trips
-            ev_cost = (ev_total / 20.39) * 2.208 + geodesic(start, end).miles * (10500 / ev_total) + ev_total * (250000 / 750000)
+            ev_total = total_ev_miles * trips
+            ev_cost = (ev_total / 20.39) * 2.208 + total_ev_miles * (10500 / ev_total) + ev_total * (250000 / 750000)
             ev_emissions = (ev_total * 0.2102) / 1000
             ev_map = generate_map(routed_coords, ev_stops[1:-1], ev_charger_coords, (f"{start_city.strip()}, {start_state.strip()}", f"{end_city.strip()}, {end_state.strip()}"))
         else:
@@ -156,7 +137,7 @@ def result():
             diesel_total_cost=f"{diesel_cost:,.2f}",
             diesel_emissions=round(diesel_emissions, 2),
             ev_unavailable=not ev_possible,
-            ev_miles=round(geodesic(start, end).miles, 1) if ev_possible else None,
+            ev_miles=round(total_ev_miles, 1) if ev_possible else None,
             ev_annual_miles=round(ev_total, 1) if ev_possible else None,
             ev_total_cost=f"{ev_cost:,.2f}" if ev_possible else None,
             ev_emissions=round(ev_emissions, 2) if ev_possible else None,
