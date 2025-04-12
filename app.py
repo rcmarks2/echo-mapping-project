@@ -109,6 +109,7 @@ def result():
                 leg_coords, leg_miles = get_routed_segment(ev_stops[i], ev_stops[i + 1], return_distance=True)
                 routed_coords.extend(leg_coords)
                 total_ev_miles += leg_miles
+            ev_total = total_ev_miles * trips
             ev_map = generate_map(routed_coords, ev_stops[1:-1], ev_charger_coords, (f"{start_city.strip()}, {start_state.strip()}", f"{end_city.strip()}, {end_state.strip()}"))
         else:
             ev_map = None
@@ -153,12 +154,19 @@ def batch_result():
                 diesel_total = diesel_miles * trips
                 if diesel_miles <= 225:
                     ev_possible = 'Yes'
+                    ev_total = diesel_miles * trips
                 else:
                     ev_possible = 'No'
                 output = [
-                    start_city, start_state, dest_city, dest_state,
-                    round(diesel_miles, 1), trips, round(diesel_total, 1),
-                    round(diesel_miles, 1) if ev_possible == 'Yes' else 'N/A',
+                    start_city,
+                    start_state,
+                    dest_city,
+                    dest_state,
+                    round(diesel_miles, 1),
+                    trips,
+                    mpg,
+                    ev_possible,
+                    round(ev_total, 1) if ev_possible == 'Yes' else 'N/A'
                 ]
                 for col, val in enumerate(output, start=1):
                     ws.cell(row=i + 3, column=col).value = val
