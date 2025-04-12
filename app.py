@@ -174,6 +174,8 @@ def batch_result():
                 maintenance_cost = diesel_miles * (17500 / diesel_total)
                 depreciation_cost = diesel_total * (16600 / 750000)
                 diesel_cost = fuel_cost + maintenance_cost + depreciation_cost
+                print(f"DIESEL COST (Route {i}):", diesel_cost)
+                ws.cell(row=i, column=8).value = round(diesel_cost, 2)
                 diesel_emissions = round(diesel_total * 1.617 / 1000, 2)
 
                 if diesel_miles <= 225:
