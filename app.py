@@ -179,9 +179,9 @@ def batch_result():
                     round(ev_cost, 2) if ev_possible == 'Yes' else 'N/A',
                     ev_emissions if ev_possible == 'Yes' else 'N/A'
                 ]
-                # Force Diesel Cost into Column 8 (H)
-                ws.cell(row=i + 3, column=8).value = round(diesel_cost, 2)
                 for col, val in enumerate(output, start=1):
+                # Also ensure Column H is explicitly written (Diesel Total Cost)
+                ws.cell(row=i + 3, column=8).value = round(diesel_cost, 2)
                     ws.cell(row=i + 3, column=col).value = val
             except Exception as err:
                 ws.cell(row=i + 3, column=1).value = f'Error: {str(err)}'
