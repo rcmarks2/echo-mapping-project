@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <title>Batch Route Results</title>
+    <title>Batch Results - Echo Global Logistics</title>
     <style>
         body {
             font-family: 'Segoe UI', sans-serif;
@@ -41,49 +41,59 @@
             max-width: 800px;
             margin: 60px auto;
             padding: 20px;
-            text-align: center;
         }
 
         h2 {
             color: #003366;
-            margin-bottom: 30px;
         }
 
-        a.button {
-            text-decoration: none;
+        .button-container {
+            margin-top: 40px;
         }
 
-        .button {
-            display: inline-block;
+        button {
             background-color: #28a745;
             color: white;
             font-size: 16px;
-            padding: 12px 30px;
+            padding: 10px 24px;
             border: none;
             border-radius: 6px;
             cursor: pointer;
-            margin: 15px;
+            margin: 10px;
         }
 
-        .button:hover {
+        button:hover {
             background-color: #218838;
+        }
+
+        a {
+            text-decoration: none;
         }
     </style>
 </head>
 <body>
 
     <div class="banner">
-        <h1>Echo Global Batch Results</h1>
+        <h1>Batch Route Results</h1>
         <img class="logo-echo" src="/static/echo_logo.png" alt="Echo Logo">
     </div>
 
     <img class="logo-illinois" src="/static/uiuc_logo.png" alt="Illinois Logo">
 
     <div class="container">
-        <h2>Your Batch Route Results Are Ready</h2>
+        <h2>Your route data has been processed.</h2>
+        <p>You can now download your results below.</p>
 
-        <a href="{{ excel_download }}" class="button">Download Excel File</a>
-        <a href="{{ txt_download }}" class="button">Download Formulas</a>
+        <div class="button-container">
+            <!-- ✅ THIS FIXES THE DOWNLOAD -->
+            <a href="{{ excel_download }}" download>
+                <button>Download Excel File</button>
+            </a>
+
+            <a href="{{ txt_download }}" download>
+                <button>Download Formulas File</button>
+            </a>
+        </div>
     </div>
 
 </body>
