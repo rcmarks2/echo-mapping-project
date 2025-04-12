@@ -56,36 +56,18 @@ def get_routed_segment(start, end, return_distance=False):
 
 def build_ev_path(start, end):
     if geodesic(start, end).miles <= 225:
-        return True, [start, end]
+        return True
     current = start
-    ev_path = [start]
-    used = []
     while geodesic(current, end).miles > 225:
         next_stop = None
         for station in ev_charger_coords:
-            if station in ev_path:
-                continue
             if geodesic(current, station).miles <= 225 and geodesic(station, end).miles < geodesic(current, end).miles:
                 next_stop = station
                 break
         if not next_stop:
-            return False, []
-        ev_path.append(next_stop)
-        used.append(next_stop)
+            return False
         current = next_stop
-    ev_path.append(end)
-    return True, ev_path
-
-def generate_map(route_coords, used_chargers, all_chargers, label):
-    m = folium.Map(location=route_coords[0], zoom_start=6, tiles="cartodbpositron")
-    for coord in all_chargers:
-        folium.CircleMarker(location=coord, radius=4, color="gray", fill=True, fill_opacity=0.6).add_to(m)
-    for coord in used_chargers:
-        folium.CircleMarker(location=coord, radius=6, color="#00cc44", fill=True, fill_opacity=1).add_to(m)
-    folium.Marker(route_coords[0], popup="Start", icon=folium.DivIcon(html=f"<b>{label[0]}</b>")).add_to(m)
-    folium.Marker(route_coords[-1], popup="End", icon=folium.DivIcon(html=f"<b>{label[1]}</b>")).add_to(m)
-    folium.PolyLine(route_coords, color="blue", weight=4).add_to(m)
-    return m._repr_html_()
+    return True
 
 @app.route("/result", methods=["POST"])
 def result():
@@ -103,10 +85,19 @@ def result():
         diesel_cost = trips * (diesel_miles / mpg) * 3.59 + diesel_miles * (17500 / diesel_total) + diesel_total * (16600 / 750000)
         diesel_emissions = (diesel_total * 1.617) / 1000
         diesel_map = generate_map(diesel_coords, [], [], (f"{start_city.strip()}, {start_state.strip()}", f"{end_city.strip()}, {end_state.strip()}"))
-        ev_possible, ev_stops = build_ev_path(start, end)
+        ev_possible, ev_stops = build_ev_path(start, end), []
         if ev_possible:
             routed_coords = []
             total_ev_miles = 0
+            ev_stops = [start]
+            current = start
+            while geodesic(current, end).miles > 225:
+                for station in ev_charger_coords:
+                    if geodesic(current, station).miles <= 225 and geodesic(station, end).miles < geodesic(current, end).miles:
+                        ev_stops.append(station)
+                        current = station
+                        break
+            ev_stops.append(end)
             for i in range(len(ev_stops) - 1):
                 leg_coords, leg_miles = get_routed_segment(ev_stops[i], ev_stops[i + 1], return_distance=True)
                 routed_coords.extend(leg_coords)
@@ -118,6 +109,7 @@ def result():
         else:
             ev_map = None
             ev_total = ev_cost = ev_emissions = None
+
         return render_template("result.html",
             diesel_miles=round(diesel_miles, 1),
             annual_trips=trips,
@@ -144,58 +136,35 @@ def batch_result():
         df = pd.read_excel(uploaded_file)
         wb = load_workbook('static/fullbatchresult.xlsx')
         ws = wb.active
+
         for i in range(len(df)):
             try:
                 row = df.iloc[i]
-                start_city = str(row['Start City']).strip()
-                start_state = str(row['Start State']).strip()
-                dest_city = str(row['Destination City']).strip()
-                dest_state = str(row['Destination State']).strip()
-                mpg = float(row.get('MPG (Will Default To 9)', 9) or 9)
-                trips = max(int(row.get('Annual Trips (Minimum 1)', 1)), 1)
+                start_city = str(row["Start City"]).strip()
+                start_state = str(row["Start State"]).strip()
+                dest_city = str(row["Destination City"]).strip()
+                dest_state = str(row["Destination State"]).strip()
+                trips = max(int(row.get("Annual Trips (Minimum 1)", 1)), 1)
+                mpg = float(row.get("MPG (Optional Will Default to 9)", 9) or 9)
+
                 start = geocode_city_state(start_city, start_state)
                 end = geocode_city_state(dest_city, dest_state)
                 _, diesel_miles = get_routed_segment(start, end, return_distance=True)
-                diesel_total = diesel_miles * trips
-                fuel_cost = trips * (diesel_miles / mpg) * 3.59
-                maintenance_cost = diesel_miles * (17500 / diesel_total)
-                depreciation_cost = diesel_total * (16600 / 750000)
-                diesel_cost = fuel_cost + maintenance_cost + depreciation_cost
-                diesel_emissions = round(diesel_total * 1.617 / 1000, 2)
-                if diesel_miles <= 225:
-                    ev_possible = 'Yes'
-                    ev_total = diesel_miles * trips
-                    ev_cost = (ev_total / 20.39) * 2.208 + diesel_miles * (10500 / ev_total) + ev_total * (250000 / 750000)
-                    ev_emissions = round(ev_total * 0.2102 / 1000, 2)
-                else:
-                    ev_possible = 'No'
-                    ev_total = ev_cost = ev_emissions = 'N/A'
-                output = [
-                    start_city,
-                    start_state,
-                    dest_city,
-                    dest_state,
-                    round(diesel_miles, 1),
-                    trips,
-                    '',  # Skip G (Diesel Total Mileage, Excel formula)
-                    '',  # Skip H (Diesel Total Cost, Excel formula)
-                    '',  # Skip I (Diesel Emissions, Excel formula)
-                    ev_possible,
-                    round(ev_total, 1) if ev_possible == 'Yes' else 'N/A'
-                ]
-                    start_city,
-                    start_state,
-                    dest_city,
-                    dest_state,
-                    round(diesel_miles, 1),
-                    trips,
-                    ev_possible,
-                    round(ev_total, 1) if ev_possible == 'Yes' else 'N/A'
-                ]
-                for col, val in enumerate(output, start=1):
-                    ws.cell(row=i + 3, column=col).value = val
+                ev_possible = "Yes" if build_ev_path(start, end) else "No"
+                ev_miles = round(diesel_miles, 1) if ev_possible == "Yes" else "N/A"
+
+                # Write columns A–H only
+                ws.cell(row=i + 3, column=1).value = start_city
+                ws.cell(row=i + 3, column=2).value = start_state
+                ws.cell(row=i + 3, column=3).value = dest_city
+                ws.cell(row=i + 3, column=4).value = dest_state
+                ws.cell(row=i + 3, column=5).value = round(diesel_miles, 1)
+                ws.cell(row=i + 3, column=6).value = trips
+                ws.cell(row=i + 3, column=7).value = ev_possible
+                ws.cell(row=i + 3, column=8).value = ev_miles
             except Exception as err:
-                ws.cell(row=i + 3, column=1).value = f'Error: {str(err)}'
+                ws.cell(row=i + 3, column=1).value = f"Error: {str(err)}"
+
         wb.save('static/fullbatchresult.xlsx')
         return render_template('batch_result.html', excel_download='/download-batch-excel', txt_download='/download-formulas')
     except Exception as e:
