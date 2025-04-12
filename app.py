@@ -16,6 +16,11 @@ app = Flask(__name__, template_folder="templates", static_folder="static")
 google_api_key = "AIzaSyCIPvsZMeb_NtkuElOooPCE46fB-bJEULg"
 geolocator = GoogleV3(api_key=google_api_key, timeout=10)
 
+# Home route
+@app.route("/")
+def index():
+    return render_template("index.html")
+
 # Load EV chargers
 ev_chargers = pd.concat([
     pd.read_excel(f"static/{f}.xlsx") for f in [1, 2, 3, 4, 5, 6, 7]
