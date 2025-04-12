@@ -57,11 +57,9 @@ def get_routed_segment(start, end, return_distance=False):
 def build_ev_path(start, end):
     if geodesic(start, end).miles <= 225:
         return True, [start, end]
-
     current = start
     ev_path = [start]
     used = []
-
     while geodesic(current, end).miles > 225:
         next_stop = None
         for station in ev_charger_coords:
@@ -75,7 +73,6 @@ def build_ev_path(start, end):
         ev_path.append(next_stop)
         used.append(next_stop)
         current = next_stop
-
     ev_path.append(end)
     return True, ev_path
 
@@ -99,16 +96,13 @@ def result():
         trips = int(request.form["annual_trips"])
         if trips <= 0:
             raise ValueError("Annual trips must be greater than 0")
-
         start = geocode_city_state(start_city.strip(), start_state.strip())
         end = geocode_city_state(end_city.strip(), end_state.strip())
-
         diesel_coords, diesel_miles = get_routed_segment(start, end, return_distance=True)
         diesel_total = diesel_miles * trips
         diesel_cost = trips * (diesel_miles / mpg) * 3.59 + diesel_miles * (17500 / diesel_total) + diesel_total * (16600 / 750000)
         diesel_emissions = (diesel_total * 1.617) / 1000
         diesel_map = generate_map(diesel_coords, [], [], (f"{start_city.strip()}, {start_state.strip()}", f"{end_city.strip()}, {end_state.strip()}"))
-
         ev_possible, ev_stops = build_ev_path(start, end)
         if ev_possible:
             routed_coords = []
@@ -117,7 +111,6 @@ def result():
                 leg_coords, leg_miles = get_routed_segment(ev_stops[i], ev_stops[i + 1], return_distance=True)
                 routed_coords.extend(leg_coords)
                 total_ev_miles += leg_miles
-
             ev_total = total_ev_miles * trips
             ev_cost = (ev_total / 20.39) * 2.208 + total_ev_miles * (10500 / ev_total) + ev_total * (250000 / 750000)
             ev_emissions = (ev_total * 0.2102) / 1000
@@ -125,7 +118,6 @@ def result():
         else:
             ev_map = None
             ev_total = ev_cost = ev_emissions = None
-
         return render_template("result.html",
             diesel_miles=round(diesel_miles, 1),
             annual_trips=trips,
@@ -146,21 +138,20 @@ def result():
 @app.route("/batch-result", methods=["POST"])
 def batch_result():
     try:
-        uploaded_file = request.files['excel']
-        if uploaded_file.filename == '':
-            return '<h3>No file selected</h3>'
+        uploaded_file = request.files["excel"]
+        if uploaded_file.filename == "":
+            return "<h3>No file selected</h3>"
         df = pd.read_excel(uploaded_file)
-        from openpyxl import load_workbook
-        wb = load_workbook('static/fullbatchresult.xlsx')
+        wb = load_workbook("static/fullbatchresult.xlsx")
         ws = wb.active
         for i, row in enumerate(df.itertuples(index=False), start=3):
             try:
-                start_city = getattr(row, 'Start City').strip()
-                start_state = getattr(row, 'Start State').strip()
-                dest_city = getattr(row, 'Destination City').strip()
-                dest_state = getattr(row, 'Destination State').strip()
-                mpg = getattr(row, 'MPG (Will Default To 9)', 9) or 9
-                trips = max(getattr(row, 'Annual Trips (Minimum 1)', 1), 1)
+                start_city = getattr(row, "Start City").strip()
+                start_state = getattr(row, "Start State").strip()
+                dest_city = getattr(row, "Destination City").strip()
+                dest_state = getattr(row, "Destination State").strip()
+                mpg = getattr(row, "MPG (Will Default To 9)", 9) or 9
+                trips = max(getattr(row, "Annual Trips (Minimum 1)", 1), 1)
                 start = geocode_city_state(start_city, start_state)
                 end = geocode_city_state(dest_city, dest_state)
                 _, diesel_miles = get_routed_segment(start, end, return_distance=True)
@@ -171,36 +162,34 @@ def batch_result():
                 diesel_cost = fuel_cost + maintenance_cost + depreciation_cost
                 diesel_emissions = round(diesel_total * 1.617 / 1000, 2)
                 if diesel_miles <= 225:
-                    ev_possible = 'Yes'
+                    ev_possible = "Yes"
                     ev_total = diesel_miles * trips
                     ev_cost = (ev_total / 20.39) * 2.208 + diesel_miles * (10500 / ev_total) + ev_total * (250000 / 750000)
                     ev_emissions = round(ev_total * 0.2102 / 1000, 2)
                 else:
-                    ev_possible = 'No'
-                    ev_total = ev_cost = ev_emissions = 'N/A'
+                    ev_possible = "No"
+                    ev_total = ev_cost = ev_emissions = "N/A"
                 output = [
                     start_city, start_state, dest_city, dest_state,
                     round(diesel_miles, 1), trips, round(diesel_total, 1),
                     round(diesel_cost, 2), diesel_emissions, ev_possible,
-                    round(diesel_miles, 1) if ev_possible == 'Yes' else 'N/A',
-                    round(ev_total, 1) if ev_possible == 'Yes' else 'N/A',
-                    round(ev_cost, 2) if ev_possible == 'Yes' else 'N/A',
-                    ev_emissions if ev_possible == 'Yes' else 'N/A'
+                    round(diesel_miles, 1) if ev_possible == "Yes" else "N/A",
+                    round(ev_total, 1) if ev_possible == "Yes" else "N/A",
+                    round(ev_cost, 2) if ev_possible == "Yes" else "N/A",
+                    ev_emissions if ev_possible == "Yes" else "N/A"
                 ]
                 for col, val in enumerate(output, start=1):
                     ws.cell(row=i, column=col).value = val
-            except Exception as row_err:
-                ws.cell(row=i, column=1).value = f'Error: {str(row_err)}'
-        wb.save('static/fullbatchresult.xlsx')
-        return render_template('batch_result.html', excel_download='/download-batch-excel', txt_download='/download-formulas')
+            except Exception as err:
+                ws.cell(row=i, column=1).value = f"Error: {str(err)}"
+        wb.save("static/fullbatchresult.xlsx")
+        return render_template("batch_result.html", excel_download="/download-batch-excel", txt_download="/download-formulas")
     except Exception as e:
-        return f'<h3>Error in batch processing: {e}</h3>'
+        return f"<h3>Error in batch processing: {e}</h3>"
+
+@app.route("/download-batch-excel")
 def download_batch_excel():
-    path = "static/fullbatchresult.xlsx"
-    if os.path.exists(path):
-        return send_file(path, as_attachment=True)
-    else:
-        return "<h3>Excel file not found. Please process your batch file first.</h3>"
+    return send_file("static/fullbatchresult.xlsx", as_attachment=True)
 
 @app.route("/download-formulas")
 def download_formulas():
