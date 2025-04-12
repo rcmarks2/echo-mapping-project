@@ -105,7 +105,15 @@ def result():
 
         diesel_coords, diesel_miles = get_routed_segment(start, end, return_distance=True)
         diesel_total = diesel_miles * trips
-        diesel_cost = trips * (diesel_miles / mpg) * 3.59 + diesel_miles * (17500 / diesel_total) + diesel_total * (16600 / 750000)
+        
+                # Recalculate diesel cost using correct formula:
+                annual_mileage = diesel_miles * trips
+                fuel_cost = trips * (diesel_miles / mpg) * 3.59
+                maintenance_cost = diesel_miles * (17500 / annual_mileage)
+                depreciation_cost = diesel_miles * (16600 / 750000)
+                diesel_cost = fuel_cost + maintenance_cost + depreciation_cost
+                print(f"DEBUG: Row {i}, Diesel Cost = $", round(diesel_cost, 2))
+
         diesel_emissions = (diesel_total * 1.617) / 1000
         diesel_map = generate_map(diesel_coords, [], [], (f"{start_city.strip()}, {start_state.strip()}", f"{end_city.strip()}, {end_state.strip()}"))
 
@@ -169,7 +177,15 @@ def batch_result():
                 _, diesel_miles = get_routed_segment(start, end, return_distance=True)
 
                 diesel_total = diesel_miles * trips
-                diesel_cost = trips * (diesel_miles / mpg) * 3.59 + diesel_miles * (17500 / diesel_total) + diesel_total * (16600 / 750000)
+                
+                # Recalculate diesel cost using correct formula:
+                annual_mileage = diesel_miles * trips
+                fuel_cost = trips * (diesel_miles / mpg) * 3.59
+                maintenance_cost = diesel_miles * (17500 / annual_mileage)
+                depreciation_cost = diesel_miles * (16600 / 750000)
+                diesel_cost = fuel_cost + maintenance_cost + depreciation_cost
+                print(f"DEBUG: Row {i}, Diesel Cost = $", round(diesel_cost, 2))
+
                 diesel_emissions = round(diesel_total * 1.617 / 1000, 2)
 
                 if diesel_miles <= 225:
