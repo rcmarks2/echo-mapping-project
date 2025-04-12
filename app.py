@@ -153,8 +153,8 @@ def batch_result():
 
         df = pd.read_excel(uploaded_file)
 
-        # Load your template
-        wb = load_workbook("static/fullbatchresult.xlsx")
+        # Load template
+        wb = load_workbook("static/uploadtemplate.xlsx")
         ws = wb.active
 
         results = []
@@ -185,13 +185,11 @@ def batch_result():
                     "No", "N/A", "N/A", "N/A", "N/A"
                 ])
 
-        # Write into the preformatted Excel
         for i, row_data in enumerate(results, start=2):
             for j, value in enumerate(row_data, start=1):
                 ws.cell(row=i, column=j).value = value
 
-        output_path = "static/batch_results.xlsx"
-        wb.save(output_path)
+        wb.save("static/batch_results.xlsx")
 
         return render_template(
             "batch_result.html",
