@@ -177,6 +177,18 @@ def batch_result():
                     dest_state,
                     round(diesel_miles, 1),
                     trips,
+                    '',  # Skip G (Diesel Total Mileage, Excel formula)
+                    '',  # Skip H (Diesel Total Cost, Excel formula)
+                    '',  # Skip I (Diesel Emissions, Excel formula)
+                    ev_possible,
+                    round(ev_total, 1) if ev_possible == 'Yes' else 'N/A'
+                ]
+                    start_city,
+                    start_state,
+                    dest_city,
+                    dest_state,
+                    round(diesel_miles, 1),
+                    trips,
                     ev_possible,
                     round(ev_total, 1) if ev_possible == 'Yes' else 'N/A'
                 ]
