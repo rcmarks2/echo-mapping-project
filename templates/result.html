@@ -48,18 +48,6 @@
             padding-bottom: 6px;
         }
 
-        .data-block {
-            margin-top: 20px;
-            padding: 20px;
-            background-color: #f6f6f6;
-            border-radius: 10px;
-        }
-
-        .data-block p {
-            font-size: 16px;
-            margin: 8px 0;
-        }
-
         .unavailable {
             background-color: #ffdddd;
             color: #900;
@@ -83,8 +71,16 @@
             overflow: hidden;
         }
 
+        .data-block {
+            background-color: #f6f6f6;
+            padding: 20px;
+            font-size: 16px;
+            border-radius: 8px;
+            margin-top: 12px;
+        }
+
         .button-area {
-            margin-top: 30px;
+            margin-top: 40px;
             text-align: center;
         }
 
@@ -106,61 +102,52 @@
 </head>
 <body>
 
-    <div class="banner">
-        <h1>Route Results</h1>
-        <img class="logo-echo" src="/static/echo_logo.png" alt="Echo Logo">
-    </div>
+<div class="banner">
+    <h1>Route Results</h1>
+    <img class="logo-echo" src="/static/echo_logo.png" alt="Echo Logo">
+</div>
 
-    <img class="logo-illinois" src="/static/uiuc_logo.png" alt="Illinois Logo">
+<img class="logo-illinois" src="/static/uiuc_logo.png" alt="Illinois Logo">
 
-    <div class="container">
+<div class="container">
 
-        <div class="maps">
-            <div class="map-box">
-                <h2>Diesel Route Map</h2>
-                {{ diesel_map|safe }}
-            </div>
-            <div class="map-box">
-                <h2>EV Route Map</h2>
-                {% if ev_unavailable %}
-                    <div class="unavailable">
-                        <strong>EV Route Not Available</strong><br>
-                        No valid charging station path found within 225-mile intervals.
-                    </div>
-                {% else %}
-                    {{ ev_map|safe }}
-                {% endif %}
-            </div>
-        </div>
-
-        <h2>Diesel Route</h2>
-        <div class="data-block">
-            <p><strong>Route Mileage:</strong> {{ diesel_miles }} mi</p>
-            <p><strong>Annual Trips:</strong> {{ annual_trips }}</p>
-            <p><strong>Total Annual Mileage:</strong> {{ diesel_annual_miles }} mi</p>
-            <p><strong>Total Annual Cost:</strong> ${{ diesel_total_cost }}</p>
-            <p><strong>Annual Emissions:</strong> {{ diesel_emissions }} metric tons CO₂</p>
-        </div>
-
-        <h2>EV Route</h2>
-        {% if ev_unavailable %}
-            <div class="unavailable">
-                <strong>EV Route Not Available</strong> — No valid charging station path found within 225-mile intervals.
-            </div>
-        {% else %}
+    <div class="maps">
+        <div class="map-box">
+            <h2>Diesel Route</h2>
+            {{ diesel_map|safe }}
             <div class="data-block">
-                <p><strong>Route Mileage:</strong> {{ ev_miles }} mi</p>
+                <p><strong>Route Mileage:</strong> {{ diesel_miles }} mi</p>
                 <p><strong>Annual Trips:</strong> {{ annual_trips }}</p>
-                <p><strong>Total Annual Mileage:</strong> {{ ev_annual_miles }} mi</p>
-                <p><strong>Total Annual Cost:</strong> ${{ ev_total_cost }}</p>
-                <p><strong>Annual Emissions:</strong> {{ ev_emissions }} metric tons CO₂</p>
+                <p><strong>Total Annual Mileage:</strong> {{ diesel_annual_miles }} mi</p>
+                <p><strong>Total Annual Cost:</strong> ${{ diesel_total_cost }}</p>
+                <p><strong>Annual Emissions:</strong> {{ diesel_emissions }} metric tons CO₂</p>
             </div>
-        {% endif %}
-
-        <div class="button-area">
-            <a class="download-btn" href="/download-formulas">Download Formulas</a>
         </div>
 
+        <div class="map-box">
+            <h2>EV Route</h2>
+            {% if ev_unavailable %}
+                <div class="unavailable">
+                    <strong>EV Route Not Available</strong><br>
+                    No valid charging station path found within 225-mile intervals.
+                </div>
+            {% else %}
+                {{ ev_map|safe }}
+                <div class="data-block">
+                    <p><strong>Route Mileage:</strong> {{ ev_miles }} mi</p>
+                    <p><strong>Annual Trips:</strong> {{ annual_trips }}</p>
+                    <p><strong>Total Annual Mileage:</strong> {{ ev_annual_miles }} mi</p>
+                    <p><strong>Total Annual Cost:</strong> ${{ ev_total_cost }}</p>
+                    <p><strong>Annual Emissions:</strong> {{ ev_emissions }} metric tons CO₂</p>
+                </div>
+            {% endif %}
+        </div>
     </div>
+
+    <div class="button-area">
+        <a class="download-btn" href="/download-formulas">Download Formulas</a>
+    </div>
+</div>
+
 </body>
 </html>
