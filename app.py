@@ -92,6 +92,7 @@ def generate_map(route_coords, used_chargers, all_chargers, label):
     folium.Marker(route_coords[-1], popup="End", icon=folium.DivIcon(html=f"<b>{label[1]}</b>")).add_to(m)
     folium.PolyLine(route_coords, color="blue", weight=4).add_to(m)
     return m._repr_html_()
+
 @app.route("/result", methods=["POST"])
 def result():
     try:
@@ -105,14 +106,12 @@ def result():
         start = geocode_city_state(start_city.strip(), start_state.strip())
         end = geocode_city_state(end_city.strip(), end_state.strip())
 
-        # Diesel route and mileage (with road routing)
         diesel_coords, diesel_miles = get_routed_segment(start, end, return_distance=True)
         diesel_total = diesel_miles * trips
         diesel_cost = trips * (diesel_miles / mpg) * 3.59 + diesel_miles * (17500 / diesel_total) + diesel_total * (16600 / 750000)
         diesel_emissions = (diesel_total * 1.617) / 1000
         diesel_map = generate_map(diesel_coords, [], [], (f"{start_city.strip()}, {start_state.strip()}", f"{end_city.strip()}, {end_state.strip()}"))
 
-        # EV segmented routing
         ev_possible, ev_stops = build_ev_path(start, end)
         if ev_possible:
             routed_coords = []
@@ -146,6 +145,33 @@ def result():
         )
     except Exception as e:
         return f"<h3>Error in single route: {e}</h3>"
+
+@app.route("/batch-result", methods=["POST"])
+def batch_result():
+    try:
+        uploaded_file = request.files["excel"]
+        if uploaded_file.filename == "":
+            return "<h3>No file selected</h3>"
+
+        df = pd.read_excel(uploaded_file)
+        print(f"Loaded Excel file with columns: {df.columns.tolist()}")
+
+        excel_output_path = "static/batch_results.xlsx"
+        txt_output_path = "static/formulas.txt"
+
+        with pd.ExcelWriter(excel_output_path) as writer:
+            df.to_excel(writer, index=False)
+
+        with open(txt_output_path, "w") as f:
+            f.write("Formula reference goes here...")
+
+        return render_template(
+            "batch_result.html",
+            excel_download=excel_output_path,
+            txt_download=txt_output_path
+        )
+    except Exception as e:
+        return f"<h3>Error in batch processing: {e}</h3>"
 
 @app.route("/download-formulas")
 def download_formulas():
