@@ -210,11 +210,6 @@ def batch_result():
 
 @app.route("/download-batch-excel")
 def download_batch_excel():
-    try:
-        return send_file("static/fullbatchresult.xlsx", as_attachment=True)
-    except Exception as e:
-        return f"<h3>Error downloading Excel file: {e}</h3>"
-def download_batch_excel():
     path = "static/fullbatchresult.xlsx"
     if os.path.exists(path):
         return send_file(path, as_attachment=True)
