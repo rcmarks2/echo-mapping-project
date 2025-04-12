@@ -161,6 +161,7 @@ def batch_result():
                 maintenance_cost = diesel_miles * (17500 / diesel_total) if diesel_total != 0 else 0
                 depreciation_cost = diesel_miles * (16600 / 750000)
                 diesel_cost = fuel_cost + maintenance_cost + depreciation_cost
+                print(f'Row {i+3} - Diesel Cost:', diesel_cost)
                 diesel_emissions = round(diesel_total * 1.617 / 1000, 2)
                 if diesel_miles <= 225:
                     ev_possible = 'Yes'
