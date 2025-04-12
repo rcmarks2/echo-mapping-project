@@ -138,20 +138,21 @@ def result():
 @app.route("/batch-result", methods=["POST"])
 def batch_result():
     try:
-        uploaded_file = request.files["excel"]
-        if uploaded_file.filename == "":
-            return "<h3>No file selected</h3>"
+        uploaded_file = request.files['excel']
+        if uploaded_file.filename == '':
+            return '<h3>No file selected</h3>'
         df = pd.read_excel(uploaded_file)
-        wb = load_workbook("static/fullbatchresult.xlsx")
+        wb = load_workbook('static/fullbatchresult.xlsx')
         ws = wb.active
-        for i, row in enumerate(df.itertuples(index=False), start=3):
+        for i in range(len(df)):
             try:
-                start_city = getattr(row, "Start City").strip()
-                start_state = getattr(row, "Start State").strip()
-                dest_city = getattr(row, "Destination City").strip()
-                dest_state = getattr(row, "Destination State").strip()
-                mpg = getattr(row, "MPG (Will Default To 9)", 9) or 9
-                trips = max(getattr(row, "Annual Trips (Minimum 1)", 1), 1)
+                row = df.iloc[i]
+                start_city = str(row['Start City']).strip()
+                start_state = str(row['Start State']).strip()
+                dest_city = str(row['Destination City']).strip()
+                dest_state = str(row['Destination State']).strip()
+                mpg = float(row.get('MPG (Will Default To 9)', 9) or 9)
+                trips = max(int(row.get('Annual Trips (Minimum 1)', 1)), 1)
                 start = geocode_city_state(start_city, start_state)
                 end = geocode_city_state(dest_city, dest_state)
                 _, diesel_miles = get_routed_segment(start, end, return_distance=True)
@@ -162,32 +163,30 @@ def batch_result():
                 diesel_cost = fuel_cost + maintenance_cost + depreciation_cost
                 diesel_emissions = round(diesel_total * 1.617 / 1000, 2)
                 if diesel_miles <= 225:
-                    ev_possible = "Yes"
+                    ev_possible = 'Yes'
                     ev_total = diesel_miles * trips
                     ev_cost = (ev_total / 20.39) * 2.208 + diesel_miles * (10500 / ev_total) + ev_total * (250000 / 750000)
                     ev_emissions = round(ev_total * 0.2102 / 1000, 2)
                 else:
-                    ev_possible = "No"
-                    ev_total = ev_cost = ev_emissions = "N/A"
+                    ev_possible = 'No'
+                    ev_total = ev_cost = ev_emissions = 'N/A'
                 output = [
                     start_city, start_state, dest_city, dest_state,
                     round(diesel_miles, 1), trips, round(diesel_total, 1),
                     round(diesel_cost, 2), diesel_emissions, ev_possible,
-                    round(diesel_miles, 1) if ev_possible == "Yes" else "N/A",
-                    round(ev_total, 1) if ev_possible == "Yes" else "N/A",
-                    round(ev_cost, 2) if ev_possible == "Yes" else "N/A",
-                    ev_emissions if ev_possible == "Yes" else "N/A"
+                    round(diesel_miles, 1) if ev_possible == 'Yes' else 'N/A',
+                    round(ev_total, 1) if ev_possible == 'Yes' else 'N/A',
+                    round(ev_cost, 2) if ev_possible == 'Yes' else 'N/A',
+                    ev_emissions if ev_possible == 'Yes' else 'N/A'
                 ]
                 for col, val in enumerate(output, start=1):
-                    ws.cell(row=i, column=col).value = val
+                    ws.cell(row=i + 3, column=col).value = val
             except Exception as err:
-                ws.cell(row=i, column=1).value = f"Error: {str(err)}"
-        wb.save("static/fullbatchresult.xlsx")
-        return render_template("batch_result.html", excel_download="/download-batch-excel", txt_download="/download-formulas")
+                ws.cell(row=i + 3, column=1).value = f'Error: {str(err)}'
+        wb.save('static/fullbatchresult.xlsx')
+        return render_template('batch_result.html', excel_download='/download-batch-excel', txt_download='/download-formulas')
     except Exception as e:
-        return f"<h3>Error in batch processing: {e}</h3>"
-
-@app.route("/download-batch-excel")
+        return f'<h3>Error in batch processing: {e}</h3>'
 def download_batch_excel():
     return send_file("static/fullbatchresult.xlsx", as_attachment=True)
 
