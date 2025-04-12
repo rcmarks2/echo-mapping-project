@@ -100,6 +100,8 @@ def result():
         end = geocode_city_state(end_city.strip(), end_state.strip())
         diesel_coords, diesel_miles = get_routed_segment(start, end, return_distance=True)
         diesel_total = diesel_miles * trips
+        diesel_cost = trips * (diesel_miles / mpg) * 3.59 + diesel_miles * (17500 / diesel_total) + diesel_total * (16600 / 750000)
+        diesel_emissions = (diesel_total * 1.617) / 1000
         diesel_map = generate_map(diesel_coords, [], [], (f"{start_city.strip()}, {start_state.strip()}", f"{end_city.strip()}, {end_state.strip()}"))
         ev_possible, ev_stops = build_ev_path(start, end)
         if ev_possible:
@@ -109,9 +111,13 @@ def result():
                 leg_coords, leg_miles = get_routed_segment(ev_stops[i], ev_stops[i + 1], return_distance=True)
                 routed_coords.extend(leg_coords)
                 total_ev_miles += leg_miles
+            ev_total = total_ev_miles * trips
+            ev_cost = (ev_total / 20.39) * 2.208 + total_ev_miles * (10500 / ev_total) + ev_total * (250000 / 750000)
+            ev_emissions = (ev_total * 0.2102) / 1000
             ev_map = generate_map(routed_coords, ev_stops[1:-1], ev_charger_coords, (f"{start_city.strip()}, {start_state.strip()}", f"{end_city.strip()}, {end_state.strip()}"))
         else:
             ev_map = None
+            ev_total = ev_cost = ev_emissions = None
         return render_template("result.html",
             diesel_miles=round(diesel_miles, 1),
             annual_trips=trips,
@@ -151,10 +157,19 @@ def batch_result():
                 end = geocode_city_state(dest_city, dest_state)
                 _, diesel_miles = get_routed_segment(start, end, return_distance=True)
                 diesel_total = diesel_miles * trips
+                fuel_cost = trips * (diesel_miles / mpg) * 3.59
+                maintenance_cost = diesel_miles * (17500 / diesel_total)
+                depreciation_cost = diesel_total * (16600 / 750000)
+                diesel_cost = fuel_cost + maintenance_cost + depreciation_cost
+                diesel_emissions = round(diesel_total * 1.617 / 1000, 2)
                 if diesel_miles <= 225:
                     ev_possible = 'Yes'
+                    ev_total = diesel_miles * trips
+                    ev_cost = (ev_total / 20.39) * 2.208 + diesel_miles * (10500 / ev_total) + ev_total * (250000 / 750000)
+                    ev_emissions = round(ev_total * 0.2102 / 1000, 2)
                 else:
                     ev_possible = 'No'
+                    ev_total = ev_cost = ev_emissions = 'N/A'
                 output = [
                     start_city,
                     start_state,
