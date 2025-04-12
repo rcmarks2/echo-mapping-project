@@ -38,7 +38,7 @@
         }
 
         .container {
-            max-width: 900px;
+            max-width: 1100px;
             margin: 40px auto;
             padding: 20px;
         }
@@ -49,7 +49,7 @@
         }
 
         .data-block {
-            margin-top: 30px;
+            margin-top: 20px;
             padding: 20px;
             background-color: #f6f6f6;
             border-radius: 10px;
@@ -69,8 +69,23 @@
             border-radius: 6px;
         }
 
+        .maps {
+            display: flex;
+            justify-content: space-between;
+            gap: 20px;
+            margin-top: 40px;
+        }
+
+        .map-box {
+            width: 48%;
+            border: 2px solid #ccc;
+            border-radius: 10px;
+            overflow: hidden;
+        }
+
         .button-area {
             margin-top: 30px;
+            text-align: center;
         }
 
         .download-btn {
@@ -99,6 +114,24 @@
     <img class="logo-illinois" src="/static/uiuc_logo.png" alt="Illinois Logo">
 
     <div class="container">
+
+        <div class="maps">
+            <div class="map-box">
+                <h2>Diesel Route Map</h2>
+                {{ diesel_map|safe }}
+            </div>
+            <div class="map-box">
+                <h2>EV Route Map</h2>
+                {% if ev_unavailable %}
+                    <div class="unavailable">
+                        <strong>EV Route Not Available</strong><br>
+                        No valid charging station path found within 225-mile intervals.
+                    </div>
+                {% else %}
+                    {{ ev_map|safe }}
+                {% endif %}
+            </div>
+        </div>
 
         <h2>Diesel Route</h2>
         <div class="data-block">
