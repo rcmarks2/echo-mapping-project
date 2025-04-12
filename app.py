@@ -156,8 +156,9 @@ def batch_result():
         ws = wb.active
 
         for i, (_, row) in enumerate(df.iterrows(), start=3):
+        # Clear previous Diesel Total Cost values in column H
         for r in range(3, ws.max_row + 1):
-            ws.cell(row=r, column=8).value = None  # Clear Diesel Total Cost column (H)
+            ws.cell(row=r, column=8).value = None
             try:
                 start_city = row["Start City"].strip()
                 start_state = row["Start State"].strip()
