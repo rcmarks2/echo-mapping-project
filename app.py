@@ -157,9 +157,12 @@ def batch_result():
                 end = geocode_city_state(dest_city, dest_state)
                 _, diesel_miles = get_routed_segment(start, end, return_distance=True)
                 diesel_total = diesel_miles * trips
+                print(f'Row {i+3} - diesel_miles: {diesel_miles}, mpg: {mpg}, trips: {trips}')
                 fuel_cost = trips * (diesel_miles / mpg) * 3.59
                 maintenance_cost = diesel_miles * (17500 / diesel_total) if diesel_total != 0 else 0
                 depreciation_cost = diesel_miles * (16600 / 750000)
+                print(f'Row {i+3} - fuel_cost: {fuel_cost}, maintenance_cost: {maintenance_cost}, depreciation_cost: {depreciation_cost}')
+                print(f'Row {i+3} - Final Diesel Cost: {diesel_cost}')
                 diesel_cost = fuel_cost + maintenance_cost + depreciation_cost
                 print(f'Row {i+3} - Diesel Cost:', diesel_cost)
                 diesel_emissions = round(diesel_total * 1.617 / 1000, 2)
