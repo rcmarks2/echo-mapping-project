@@ -120,15 +120,6 @@
 
     <div class="container">
 
-        <!-- New Template Download Box -->
-        <div class="template-box">
-            <p><strong>Need a starting point?</strong></p>
-            <p>Download this file, enter your route information, and reupload the file with your data in it.</p>
-            <a href="/static/uploadtemplate.xlsx" download>
-                <button type="button">Download Excel Template</button>
-            </a>
-        </div>
-
         <h2>Plan a Single Route</h2>
         <form method="POST" action="/result">
             <label for="start">Start Location (City, State)</label>
@@ -155,6 +146,16 @@
 
             <button type="submit">Process Batch Routes</button>
         </form>
+
+        <!-- 🔁 MOVED + UPDATED TEMPLATE INFO BOX -->
+        <div class="template-box">
+            <p><strong>Need a starting point?</strong></p>
+            <p>Download this file, enter your route information, and reupload the file with your data in it to the Excel upload below.</p>
+            <a href="/static/uploadtemplate.xlsx" download>
+                <button type="button">Download Excel Template</button>
+            </a>
+        </div>
+
     </div>
 </body>
 </html>
