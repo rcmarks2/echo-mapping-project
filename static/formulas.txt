@@ -11,8 +11,15 @@ DIESEL TRUCK FORMULAS
 3. Depreciation Cost:
    = (One Trip Miles) × [$166,000 (Average Truck Purchase Cost) ÷ 750,000 (Average Lifetime Miles for a Truck)]
 
+4. Labor Cost:
+   = (Miles per Trip ÷ 50 mph) × [75,000 ÷ 52 weeks ÷ 6 days ÷ 8 hours] × Annual Trips
+
+   - Labor is based on an average truck speed of 50 mph.
+   - Hourly rate is calculated from a $75,000/year salary over 52 weeks, 6 working days per week, and 8 hours per day.
+   - Resulting hourly rate = $30.04/hour.
+
 4. Total Annual Cost:
-   = Fuel Cost + Maintenance Cost + Depreciation Cost
+   = Fuel Cost + Maintenance Cost + Depreciation Cost + Labor Cost
 
 5. Annual CO₂ Emissions:
    = Annual Mileage × 1.617 (kg CO₂/mile) → divide by 1000 to get metric tons
@@ -29,9 +36,15 @@ ELECTRIC TRUCK FORMULAS
 3. Depreciation Cost:
    = (One Trip Miles) × [$250,000 (Average Truck Purchase Cost) ÷ 750,000 (Average Lifetime Miles for a Truck)]
 
+4. Labor Cost:
+   = (Miles per Trip ÷ 50 mph) × [75,000 ÷ 52 weeks ÷ 6 days ÷ 8 hours] × Annual Trips
+
+   - Labor is based on an average truck speed of 50 mph.
+   - Hourly rate is calculated from a $75,000/year salary over 52 weeks, 6 working days per week, and 8 hours per day.
+   - Resulting hourly rate = $30.04/hour.
 
 4. Total Annual Cost:
-   = Charge Cost + Maintenance Cost + Depreciation Cost
+   = Charge Cost + Maintenance Cost + Depreciation Cost + Labor Cost
 
 5. Annual CO₂ Emissions:
    = Annual Mileage × 0.2102 (kg CO₂/mile) → divide by 1000 to get metric tons
