@@ -83,6 +83,89 @@ def generate_map(route_coords, used_chargers, all_chargers, label):
     folium.Marker(route_coords[-1], popup="End", icon=folium.DivIcon(html=f"<b>{label[1]}</b>")).add_to(m)
     folium.PolyLine(route_coords, color="blue", weight=4).add_to(m)
     return m._repr_html_()
+
+@app.route("/result", methods=["POST"])
+def result():
+    try:
+        start_city, start_state = request.form["start"].split(",")
+        end_city, end_state = request.form["end"].split(",")
+        mpg = float(request.form.get("mpg") or 9.0)
+        trips = int(request.form["annual_trips"])
+        if trips <= 0:
+            raise ValueError("Annual trips must be greater than 0")
+        start = geocode_city_state(start_city.strip(), start_state.strip())
+        end = geocode_city_state(end_city.strip(), end_state.strip())
+        diesel_coords, diesel_miles = get_routed_segment(start, end, return_distance=True)
+        diesel_total = diesel_miles * trips
+
+        hourly_rate = 75000 / 52 / 6 / 8
+        diesel_hours = diesel_miles / 50
+        diesel_labor_cost = hourly_rate * diesel_hours
+
+        diesel_cost = (
+            trips * (diesel_miles / mpg) * 3.59 +
+            diesel_miles * (17500 / 62169) +
+            diesel_total * (166000 / 750000) +
+            diesel_labor_cost
+        )
+        diesel_emissions = (diesel_total * 1.617) / 1000
+        diesel_map = generate_map(diesel_coords, [], [], (f"{start_city.strip()}, {start_state.strip()}", f"{end_city.strip()}, {end_state.strip()}"))
+
+        ev_possible = build_ev_path(start, end)
+        if ev_possible:
+            ev_stops = [start]
+            current = start
+            while geodesic(current, end).miles > 225:
+                candidates = [
+                    station for station in ev_charger_coords
+                    if geodesic(current, station).miles <= 225 and geodesic(station, end).miles < geodesic(current, end).miles
+                ]
+                if not candidates:
+                    ev_possible = False
+                    break
+                next_stop = max(candidates, key=lambda s: geodesic(current, s).miles)
+                ev_stops.append(next_stop)
+                current = next_stop
+            ev_stops.append(end)
+            routed_coords = []
+            total_ev_miles = 0
+            for i in range(len(ev_stops) - 1):
+                leg_coords, leg_miles = get_routed_segment(ev_stops[i], ev_stops[i + 1], return_distance=True)
+                routed_coords.extend(leg_coords)
+                total_ev_miles += leg_miles
+
+            ev_hours = total_ev_miles / 50
+            ev_labor_cost = hourly_rate * ev_hours
+
+            ev_total = total_ev_miles * trips
+            ev_cost = (
+                (ev_total / 20.39) * 2.208 +
+                total_ev_miles * (10500 / 62169) +
+                ev_total * (250000 / 750000) +
+                ev_labor_cost
+            )
+            ev_emissions = (ev_total * 0.2102) / 1000
+            ev_map = generate_map(routed_coords, ev_stops[1:-1], ev_charger_coords, (f"{start_city.strip()}, {start_state.strip()}", f"{end_city.strip()}, {end_state.strip()}"))
+        else:
+            ev_map = None
+            ev_total = ev_cost = ev_emissions = None
+
+        return render_template("result.html",
+            diesel_miles=round(diesel_miles, 1),
+            annual_trips=trips,
+            diesel_annual_miles=round(diesel_total, 1),
+            diesel_total_cost=f"{diesel_cost:,.2f}",
+            diesel_emissions=round(diesel_emissions, 2),
+            ev_unavailable=not ev_possible,
+            ev_miles=round(total_ev_miles, 1) if ev_possible else None,
+            ev_annual_miles=round(ev_total, 1) if ev_possible else None,
+            ev_total_cost=f"{ev_cost:,.2f}" if ev_possible else None,
+            ev_emissions=round(ev_emissions, 2) if ev_possible else None,
+            diesel_map=diesel_map,
+            ev_map=ev_map
+        )
+    except Exception as e:
+        return f"<h3>Error in single route: {e}</h3>"
 @app.route("/batch-result", methods=["POST"])
 def batch_result():
     try:
