@@ -1,0 +1,123 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Instructions | Echo Global Route Tool</title>
+    <style>
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background-color: #f5f7fa;
+            margin: 0;
+            padding: 0;
+            color: #1f2937;
+        }
+        header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 10px 30px;
+            background-color: #ffffff;
+            border-bottom: 2px solid #e2e8f0;
+        }
+        header img.logo-right {
+            height: 50px;
+        }
+        header img.logo-left {
+            height: 40px;
+        }
+        .container {
+            max-width: 950px;
+            margin: 50px auto;
+            background-color: #ffffff;
+            padding: 40px;
+            border-radius: 12px;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.08);
+        }
+        h1 {
+            text-align: center;
+            color: #003366;
+            font-size: 32px;
+        }
+        h2 {
+            color: #003366;
+            margin-top: 40px;
+            font-size: 24px;
+        }
+        p {
+            font-size: 18px;
+            line-height: 1.7;
+            margin-top: 10px;
+        }
+        .image-block {
+            margin: 25px 0;
+            text-align: center;
+        }
+        .image-block img {
+            width: 100%;
+            max-width: 850px;
+            border-radius: 10px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+            border: 2px solid #cfd8e3;
+        }
+        .image-block caption {
+            display: block;
+            font-size: 16px;
+            margin-top: 10px;
+            color: #4b5563;
+        }
+        a.button {
+            display: inline-block;
+            margin-top: 40px;
+            padding: 12px 24px;
+            background-color: #003366;
+            color: white;
+            text-decoration: none;
+            border-radius: 6px;
+            font-size: 18px;
+        }
+        a.button:hover {
+            background-color: #0053a4;
+        }
+    </style>
+</head>
+<body>
+    <header>
+        <img src="/static/uiuc_logo.png" alt="Illinois Logo" class="logo-left">
+        <img src="/static/echo_logo.png" alt="Echo Logo" class="logo-right">
+    </header>
+
+    <div class="container">
+        <h1>How to Use Our Route Comparison Tool</h1>
+
+        <h2>Single Route</h2>
+        <p>
+            To generate a detailed diesel vs. EV comparison for one specific route, use the <strong>Single Route</strong> section on the homepage. Enter your start and end locations, your truck's MPG (optional), and the number of annual trips. Then click <strong>Generate Comparison</strong>.
+        </p>
+
+        <div class="image-block">
+            <img src="/static/Single Route Section.png" alt="Single Route Form">
+            <caption>Example of the Single Route section on the homepage.</caption>
+        </div>
+
+        <h2>Batch Upload</h2>
+        <p>
+            To analyze many routes at once, scroll to the <strong>Batch Route Upload</strong> section. Start by downloading the provided Excel template using the link labeled “Download here.”
+        </p>
+
+        <div class="image-block">
+            <img src="/static/Batch Route Template Download.png" alt="Batch Template Download">
+            <caption>Click "Download here" to get the Excel upload template.</caption>
+        </div>
+
+        <p>
+            Fill out the template with your route details: start city/state, end city/state, annual trips, and (optionally) MPG. Save your file, then upload it using the <strong>Upload Excel File</strong> field. Click <strong>Upload and Process Routes</strong> to view results for all routes.
+        </p>
+
+        <div class="image-block">
+            <img src="/static/Batch Route Excel File Upload.png" alt="Batch Upload Form">
+            <caption>Upload your completed Excel file in this section.</caption>
+        </div>
+
+        <a class="button" href="/">Return to Homepage</a>
+    </div>
+</body>
+</html>
