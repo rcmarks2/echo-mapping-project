@@ -1,0 +1,79 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Optimize EV Adoption</title>
+    <link rel="stylesheet" href="/static/style.css">
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            padding: 40px;
+            background-color: #f8f9fa;
+        }
+        h1 {
+            color: #0072ce;
+        }
+        form {
+            margin-bottom: 30px;
+        }
+        input[type="file"] {
+            padding: 10px;
+            margin-top: 10px;
+        }
+        button {
+            background-color: #0072ce;
+            color: white;
+            padding: 10px 20px;
+            border: none;
+            margin-top: 10px;
+            cursor: pointer;
+        }
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 30px;
+        }
+        th, td {
+            padding: 10px;
+            border: 1px solid #ddd;
+        }
+        th {
+            background-color: #0072ce;
+            color: white;
+        }
+        tr:nth-child(even) {
+            background-color: #f1f1f1;
+        }
+    </style>
+</head>
+<body>
+    <h1>Optimize EV Adoption</h1>
+    <form action="/optimize-ev-adoption" method="post" enctype="multipart/form-data">
+        <label for="excel">Upload Excel File:</label><br>
+        <input type="file" name="excel" accept=".xlsx, .xls" required><br>
+        <button type="submit">Submit</button>
+    </form>
+
+    {% if suggestions %}
+    <h2>Top 10 Routes for EV Savings</h2>
+    <table>
+        <tr>
+            <th>Start City</th>
+            <th>Destination City</th>
+            <th>Diesel Miles</th>
+            <th>EV Miles</th>
+            <th>Potential Miles Saved</th>
+        </tr>
+        {% for row in suggestions %}
+        <tr>
+            <td>{{ row[0] }}</td>
+            <td>{{ row[1] }}</td>
+            <td>{{ row[2] }}</td>
+            <td>{{ row[3] }}</td>
+            <td>{{ row[4] }}</td>
+        </tr>
+        {% endfor %}
+    </table>
+    {% endif %}
+</body>
+</html>
