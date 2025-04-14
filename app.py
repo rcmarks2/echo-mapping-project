@@ -83,7 +83,6 @@ def generate_map(route_coords, used_chargers, all_chargers, label):
     folium.Marker(route_coords[-1], popup="End", icon=folium.DivIcon(html=f"<b>{label[1]}</b>")).add_to(m)
     folium.PolyLine(route_coords, color="blue", weight=4).add_to(m)
     return m._repr_html_()
-
 @app.route("/result", methods=["POST"])
 def result():
     try:
@@ -97,9 +96,21 @@ def result():
         end = geocode_city_state(end_city.strip(), end_state.strip())
         diesel_coords, diesel_miles = get_routed_segment(start, end, return_distance=True)
         diesel_total = diesel_miles * trips
-        diesel_cost = trips * (diesel_miles / mpg) * 3.59 + diesel_miles * (17500 / 62169) + diesel_total * (166000 / 750000)
+
+        # Labor cost for Diesel
+        hourly_rate = 75000 / 52 / 6 / 8
+        diesel_hours = diesel_miles / 50
+        diesel_labor_cost = hourly_rate * diesel_hours
+
+        diesel_cost = (
+            trips * (diesel_miles / mpg) * 3.59 +
+            diesel_miles * (17500 / 62169) +
+            diesel_total * (166000 / 750000) +
+            diesel_labor_cost
+        )
         diesel_emissions = (diesel_total * 1.617) / 1000
         diesel_map = generate_map(diesel_coords, [], [], (f"{start_city.strip()}, {start_state.strip()}", f"{end_city.strip()}, {end_state.strip()}"))
+
         ev_possible = build_ev_path(start, end)
         if ev_possible:
             ev_stops = [start]
@@ -122,8 +133,18 @@ def result():
                 leg_coords, leg_miles = get_routed_segment(ev_stops[i], ev_stops[i + 1], return_distance=True)
                 routed_coords.extend(leg_coords)
                 total_ev_miles += leg_miles
+
+            # Labor cost for EV
+            ev_hours = total_ev_miles / 50
+            ev_labor_cost = hourly_rate * ev_hours
+
             ev_total = total_ev_miles * trips
-            ev_cost = (ev_total / 20.39) * 2.208 + total_ev_miles * (10500 / 62169) + ev_total * (250000 / 750000)
+            ev_cost = (
+                (ev_total / 20.39) * 2.208 +
+                total_ev_miles * (10500 / 62169) +
+                ev_total * (250000 / 750000) +
+                ev_labor_cost
+            )
             ev_emissions = (ev_total * 0.2102) / 1000
             ev_map = generate_map(routed_coords, ev_stops[1:-1], ev_charger_coords, (f"{start_city.strip()}, {start_state.strip()}", f"{end_city.strip()}, {end_state.strip()}"))
         else:

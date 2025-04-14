@@ -66,7 +66,7 @@
         }
         a.button {
             display: inline-block;
-            margin-top: 40px;
+            margin-top: 30px;
             padding: 12px 24px;
             background-color: #003366;
             color: white;
@@ -76,6 +76,10 @@
         }
         a.button:hover {
             background-color: #0053a4;
+        }
+        .formula-block {
+            text-align: center;
+            margin-top: 50px;
         }
     </style>
 </head>
@@ -90,34 +94,42 @@
 
         <h2>Single Route</h2>
         <p>
-            To generate a detailed diesel vs. EV comparison for one specific route, use the <strong>Single Route</strong> section on the homepage. Enter your start and end locations, your truck's MPG (optional), and the number of annual trips. Then click <strong>Generate Comparison</strong>.
+            To generate a detailed diesel vs. EV comparison for a single route, use the <strong>Single Route</strong> section on the homepage.
+            Enter your start and end locations, your truck’s MPG (optional), and the number of annual trips.
+            Then click <strong>Generate Comparison</strong> to view side-by-side maps, cost, and emissions results.
         </p>
-
         <div class="image-block">
             <img src="/static/Single Route Section.png" alt="Single Route Form">
-            <caption>Example of the Single Route section on the homepage.</caption>
+            <caption>Single Route section where you enter your route details.</caption>
         </div>
 
         <h2>Batch Upload</h2>
         <p>
-            To analyze many routes at once, scroll to the <strong>Batch Route Upload</strong> section. Start by downloading the provided Excel template using the link labeled “Download here.”
+            If you need to analyze multiple routes at once, scroll to the <strong>Batch Route Upload</strong> section on the homepage.
+            Start by downloading the Excel template labeled “Download here.”
         </p>
-
         <div class="image-block">
-            <img src="/static/Batch Route Template Download.png" alt="Batch Template Download">
+            <img src="/static/Batch Route Template Download.png" alt="Download Template">
             <caption>Click "Download here" to get the Excel upload template.</caption>
         </div>
 
         <p>
-            Fill out the template with your route details: start city/state, end city/state, annual trips, and (optionally) MPG. Save your file, then upload it using the <strong>Upload Excel File</strong> field. Click <strong>Upload and Process Routes</strong> to view results for all routes.
+            Open the Excel file, enter your start and end cities/states, MPG (optional), and annual trips for each route. Save the file and upload it using the <strong>Upload Excel File</strong> field. After clicking <strong>Upload and Process Routes</strong>, your results will be downloadable in Excel format.
         </p>
-
         <div class="image-block">
-            <img src="/static/Batch Route Excel File Upload.png" alt="Batch Upload Form">
-            <caption>Upload your completed Excel file in this section.</caption>
+            <img src="/static/Batch Route Excel File Upload.png" alt="Upload Excel Form">
+            <caption>Upload your completed template here to run multiple routes at once.</caption>
         </div>
 
-        <a class="button" href="/">Return to Homepage</a>
+        <div class="formula-block">
+            <h2>Download Our Calculation Formulas</h2>
+            <p>If you're wondering how we calculate cost, emissions, and feasibility, click below to download the formulas and constants used in our tool.</p>
+            <a class="button" href="/download-formulas" download>Download Formulas</a>
+        </div>
+
+        <div style="text-align:center; margin-top: 40px;">
+            <a class="button" href="/">Return to Homepage</a>
+        </div>
     </div>
 </body>
 </html>
