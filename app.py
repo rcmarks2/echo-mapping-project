@@ -166,8 +166,36 @@ def batch_result():
                 start = geocode_city_state(start_city, start_state)
                 end = geocode_city_state(dest_city, dest_state)
                 _, diesel_miles = get_routed_segment(start, end, return_distance=True)
-                ev_possible = "Yes" if build_ev_path(start, end) else "No"
-                ev_miles = round(diesel_miles, 1) if ev_possible == "Yes" else "N/A"
+
+                if build_ev_path(start, end):
+                    ev_stops = [start]
+                    current = start
+                    ev_feasible = True
+                    while geodesic(current, end).miles > 225:
+                        candidates = [
+                            station for station in ev_charger_coords
+                            if geodesic(current, station).miles <= 225 and geodesic(station, end).miles < geodesic(current, end).miles
+                        ]
+                        if not candidates:
+                            ev_feasible = False
+                            break
+                        next_stop = max(candidates, key=lambda s: geodesic(current, s).miles)
+                        ev_stops.append(next_stop)
+                        current = next_stop
+                    if ev_feasible:
+                        ev_stops.append(end)
+                        total_ev_miles = 0
+                        for j in range(len(ev_stops) - 1):
+                            _, leg_miles = get_routed_segment(ev_stops[j], ev_stops[j + 1], return_distance=True)
+                            total_ev_miles += leg_miles
+                        ev_possible = "Yes"
+                        ev_miles = round(total_ev_miles, 1)
+                    else:
+                        ev_possible = "No"
+                        ev_miles = "N/A"
+                else:
+                    ev_possible = "No"
+                    ev_miles = "N/A"
 
                 ws.cell(row=i + 3, column=1).value = start_city
                 ws.cell(row=i + 3, column=2).value = start_state
