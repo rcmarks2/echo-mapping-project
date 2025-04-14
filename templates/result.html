@@ -25,51 +25,56 @@
             height: 40px;
         }
         .container {
-            max-width: 1400px;
-            margin: 40px auto;
+            max-width: 1600px;
+            margin: 30px auto;
             padding: 0 30px;
-        }
-        .section {
-            background-color: #ffffff;
-            border-radius: 12px;
-            padding: 30px;
-            box-shadow: 0 4px 8px rgba(0,0,0,0.06);
-            margin-bottom: 40px;
-        }
-        h2 {
-            text-align: center;
-            color: #003366;
-            margin-bottom: 20px;
-        }
-        .metrics {
-            display: flex;
-            justify-content: space-around;
-            flex-wrap: wrap;
-            margin-top: 20px;
-        }
-        .metric {
-            background-color: #f1f5f9;
-            padding: 20px;
-            border-radius: 8px;
-            margin: 10px;
-            flex: 1 1 250px;
-            text-align: center;
         }
         .maps {
             display: flex;
             justify-content: space-around;
-            gap: 30px;
+            gap: 40px;
             flex-wrap: wrap;
         }
-        .map-container {
-            width: 650px;
-            height: 550px;
-            overflow: hidden;
+        .map-block {
+            flex: 1 1 700px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
         }
-        iframe {
+        .map-container {
+            width: 100%;
+            height: 600px;
+            margin-bottom: 20px;
+        }
+        .map-container iframe {
             width: 100%;
             height: 100%;
             border: none;
+        }
+        .metrics {
+            background-color: #ffffff;
+            border-radius: 12px;
+            padding: 30px;
+            box-shadow: 0 4px 10px rgba(0,0,0,0.07);
+            width: 100%;
+        }
+        .metrics h3 {
+            text-align: center;
+            color: #003366;
+            font-size: 26px;
+            margin-bottom: 20px;
+        }
+        .metric-table {
+            width: 100%;
+            font-size: 20px;
+            border-collapse: collapse;
+        }
+        .metric-table td {
+            padding: 14px 20px;
+            border-bottom: 1px solid #e5e7eb;
+        }
+        .metric-table tr:last-child td {
+            border-bottom: none;
         }
     </style>
 </head>
@@ -80,50 +85,49 @@
     </header>
 
     <div class="container">
-        <div class="section">
-            <h2>Diesel Truck Metrics</h2>
-            <div class="metrics">
-                <div class="metric"><strong>Route Mileage:</strong><br>{{ diesel_miles }} mi</div>
-                <div class="metric"><strong>Annual Trips:</strong><br>{{ annual_trips }}</div>
-                <div class="metric"><strong>Total Annual Miles:</strong><br>{{ diesel_annual_miles }} mi</div>
-                <div class="metric"><strong>Total Annual Cost:</strong><br>${{ diesel_total_cost }}</div>
-                <div class="metric"><strongAnnual CO₂ Emissions:</strong><br>{{ diesel_emissions }} metric tons</div>
-            </div>
-        </div>
-
-        <div class="section">
-            <h2>Electric Truck Metrics</h2>
-            {% if ev_unavailable %}
-                <p style="text-align:center; color: red; font-weight: bold;">EV Route Not Possible</p>
-            {% else %}
+        <div class="maps">
+            <div class="map-block">
+                <h2>Diesel Route</h2>
+                <div class="map-container">
+                    {{ diesel_map|safe }}
+                </div>
                 <div class="metrics">
-                    <div class="metric"><strong>Route Mileage:</strong><br>{{ ev_miles }} mi</div>
-                    <div class="metric"><strong>Annual Trips:</strong><br>{{ annual_trips }}</div>
-                    <div class="metric"><strong>Total Annual Miles:</strong><br>{{ ev_annual_miles }} mi</div>
-                    <div class="metric"><strong>Total Annual Cost:</strong><br>${{ ev_total_cost }}</div>
-                    <div class="metric"><strong>Annual CO₂ Emissions:</strong><br>{{ ev_emissions }} metric tons</div>
+                    <h3>Diesel Truck Metrics</h3>
+                    <table class="metric-table">
+                        <tr><td><strong>Route Mileage:</strong></td><td>{{ diesel_miles }} mi</td></tr>
+                        <tr><td><strong>Annual Trips:</strong></td><td>{{ annual_trips }}</td></tr>
+                        <tr><td><strong>Total Annual Miles:</strong></td><td>{{ diesel_annual_miles }} mi</td></tr>
+                        <tr><td><strong>Total Annual Cost:</strong></td><td>${{ diesel_total_cost }}</td></tr>
+                        <tr><td><strong>Annual CO₂ Emissions:</strong></td><td>{{ diesel_emissions }} metric tons</td></tr>
+                    </table>
                 </div>
-            {% endif %}
-        </div>
-
-        <div class="section">
-            <h2>Route Visualizations</h2>
-            <div class="maps">
-                <div>
-                    <h3 style="text-align:center;">Diesel Route</h3>
-                    <div class="map-container">
-                        {{ diesel_map|safe }}
-                    </div>
-                </div>
-                {% if not ev_unavailable %}
-                <div>
-                    <h3 style="text-align:center;">EV Route</h3>
-                    <div class="map-container">
-                        {{ ev_map|safe }}
-                    </div>
-                </div>
-                {% endif %}
             </div>
+
+            {% if not ev_unavailable %}
+            <div class="map-block">
+                <h2>EV Route</h2>
+                <div class="map-container">
+                    {{ ev_map|safe }}
+                </div>
+                <div class="metrics">
+                    <h3>Electric Truck Metrics</h3>
+                    <table class="metric-table">
+                        <tr><td><strong>Route Mileage:</strong></td><td>{{ ev_miles }} mi</td></tr>
+                        <tr><td><strong>Annual Trips:</strong></td><td>{{ annual_trips }}</td></tr>
+                        <tr><td><strong>Total Annual Miles:</strong></td><td>{{ ev_annual_miles }} mi</td></tr>
+                        <tr><td><strong>Total Annual Cost:</strong></td><td>${{ ev_total_cost }}</td></tr>
+                        <tr><td><strong>Annual CO₂ Emissions:</strong></td><td>{{ ev_emissions }} metric tons</td></tr>
+                    </table>
+                </div>
+            </div>
+            {% else %}
+            <div class="map-block">
+                <h2>EV Route</h2>
+                <div class="map-container" style="text-align:center;">
+                    <p style="font-size: 24px; color: red; font-weight: bold;">EV Route Not Possible</p>
+                </div>
+            </div>
+            {% endif %}
         </div>
     </div>
 </body>
