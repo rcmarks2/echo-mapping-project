@@ -5,89 +5,98 @@
     <title>Instructions</title>
     <style>
         body {
-            font-family: Arial, sans-serif;
-            background-color: #f4f6f8;
-            padding: 40px;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background-color: #f8f9fa;
+            padding: 0;
+            margin: 0;
         }
-        h1 {
-            color: #003366;
-            margin-bottom: 10px;
+
+        .banner {
+            background-color: #0072ce;
+            color: white;
+            padding: 20px 40px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
         }
+
+        .banner h1 {
+            margin: 0;
+            font-size: 28px;
+        }
+
+        .banner img {
+            height: 50px;
+        }
+
+        .container {
+            max-width: 1100px;
+            margin: 40px auto;
+            padding: 0 20px;
+            background-color: white;
+            border-radius: 10px;
+            box-shadow: 0 0 10px rgba(0,0,0,0.05);
+        }
+
         h2 {
-            color: #004b87;
+            color: #0056b3;
             margin-top: 40px;
         }
-        ul, ol {
-            margin-left: 20px;
-            margin-bottom: 20px;
-        }
+
         p {
-            max-width: 800px;
+            font-size: 16px;
+            line-height: 1.6;
         }
-        img {
+
+        img.screenshot {
             max-width: 100%;
+            margin: 20px 0;
             border: 1px solid #ccc;
-            margin-top: 20px;
+            border-radius: 6px;
+            box-shadow: 2px 2px 8px rgba(0,0,0,0.1);
+        }
+
+        .footer {
+            margin-top: 60px;
+            padding: 20px 40px;
+            display: flex;
+            justify-content: flex-start;
+        }
+
+        .footer img {
+            height: 45px;
         }
     </style>
 </head>
 <body>
 
-    <h1>How to Use the EV & Diesel Route Comparison Tool</h1>
+    <div class="banner">
+        <h1>Instructions</h1>
+        <img src="/static/echo_logo.png" alt="Echo Logo">
+    </div>
 
-    <h2>Single Route Entry</h2>
-    <p>
-        To compare the EV and diesel route for a single trip:
-    </p>
-    <ol>
-        <li>Go to the home page.</li>
-        <li>Enter a valid U.S. city and state for both start and destination (e.g., <strong>Chicago, IL</strong> to <strong>Atlanta, GA</strong>).</li>
-        <li>Optionally enter the miles per gallon (MPG) of your diesel truck (defaults to 9 MPG if left blank).</li>
-        <li>Enter the number of annual trips you expect to make on this route.</li>
-        <li>Click <strong>Compare Routes</strong> to view maps, cost, and emissions for both EV and diesel.</li>
-    </ol>
+    <div class="container">
+        <h2>1. Compare Diesel vs EV Routes (Single Route)</h2>
+        <p>Use the form on the homepage to compare a single diesel truck route vs. EV truck route. Just enter:</p>
+        <ul>
+            <li>Start and end locations (e.g., Chicago, IL → Atlanta, GA)</li>
+            <li>Optional diesel MPG (defaults to 9)</li>
+            <li>Number of annual trips</li>
+        </ul>
+        <img src="/static/Single Route Section.png" alt="Single Route Form" class="screenshot">
 
-    <img src="/static/single_route_example.png" alt="Single Route Example">
+        <h2>2. Upload Multiple Routes at Once (Batch Upload)</h2>
+        <p>You can upload an Excel file with multiple routes to process them all at once. Make sure your file matches the format exactly.</p>
+        <img src="/static/Batch Route Excel File Upload.png" alt="Batch Upload Example" class="screenshot">
 
-    <h2>Batch Upload (Multiple Routes)</h2>
-    <p>
-        To compare routes across many locations at once:
-    </p>
-    <ol>
-        <li>Prepare an Excel file using the following column headers in row 1:
-            <ul>
-                <li><strong>Start City</strong></li>
-                <li><strong>Start State</strong></li>
-                <li><strong>Destination City</strong></li>
-                <li><strong>Destination State</strong></li>
-                <li><strong>MPG (Optional Will Default to 9)</strong></li>
-                <li><strong>Annual Trips (Minimum 1)</strong></li>
-            </ul>
-        </li>
-        <li>Go to the <strong>Batch Upload</strong> section on the home page.</li>
-        <li>Upload your Excel file and click <strong>Submit</strong>.</li>
-        <li>Once processing is complete, you will receive a downloadable <strong>fullbatchresult.xlsx</strong> file showing feasibility and mileage for diesel vs. EV routes.</li>
-    </ol>
+        <h2>3. Need a Template?</h2>
+        <p>You can download a blank Excel template from the homepage to get started with batch uploads:</p>
+        <img src="/static/Batch Route Template Download.png" alt="Download Template" class="screenshot">
+    </div>
 
-    <img src="/static/batch_upload_example.png" alt="Batch Upload Example">
-    <img src="/static/batch_result_example.png" alt="Batch Result Example">
-
-    <h2>EV Route Optimization Tool</h2>
-    <p>
-        After generating your <strong>fullbatchresult.xlsx</strong> file, you can use the EV Optimization tool to identify which routes should be prioritized for EV conversion based on potential cost and emissions savings.
-    </p>
-    <p>
-        To use the tool:
-    </p>
-    <ol>
-        <li>Click <strong>EV Route Optimization</strong> from the homepage.</li>
-        <li>Upload your existing <strong>fullbatchresult.xlsx</strong> file (previously downloaded from the batch upload).</li>
-        <li>Enter the percentage of routes you'd like to convert to EV (for example, enter <strong>25</strong> to convert the top 25% of routes).</li>
-        <li>Click <strong>Optimize EV Adoption</strong>.</li>
-        <li>You will receive a downloadable file with the selected EV routes <strong>highlighted in yellow</strong>.</li>
-    </ol>
-
-    <img src="/static/optimization.png" alt="EV Route Optimization Example">
+    <div class="footer">
+        <img src="/static/uiuc_logo.png" alt="Illinois Logo">
+    </div>
 
 </body>
 </html>

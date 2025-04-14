@@ -15,6 +15,7 @@ app = Flask(__name__, template_folder="templates", static_folder="static")
 google_api_key = "AIzaSyCIPvsZMeb_NtkuElOooPCE46fB-bJEULg"
 geolocator = GoogleV3(api_key=google_api_key, timeout=10)
 geo_cache = {}
+route_cache = {}
 
 @app.route("/")
 def index():
@@ -42,6 +43,12 @@ def geocode_city_state(city, state):
     return geo_cache[key]
 
 def get_routed_segment(start, end, return_distance=False):
+    cache_key = (start, end)
+    if cache_key in route_cache:
+        if return_distance:
+            return route_cache[cache_key]['coords'], route_cache[cache_key]['miles']
+        return route_cache[cache_key]['coords']
+
     url = "https://routes.googleapis.com/directions/v2:computeRoutes"
     headers = {
         "Content-Type": "application/json",
@@ -59,9 +66,10 @@ def get_routed_segment(start, end, return_distance=False):
         if "routes" in data and data["routes"]:
             encoded = data["routes"][0]["polyline"]["encodedPolyline"]
             coords = polyline.decode(encoded)
+            miles = data["routes"][0]["distanceMeters"] / 1609.34
+            route_cache[cache_key] = {'coords': coords, 'miles': miles}
             if return_distance:
-                meters = data["routes"][0]["distanceMeters"]
-                return coords, meters / 1609.34
+                return coords, miles
             return coords
     return [] if not return_distance else ([], 0)
 
@@ -243,14 +251,6 @@ def batch_result():
     except Exception as e:
         return f'<h3>Error in batch processing: {e}</h3>'
 
-@app.route("/download-batch-excel")
-def download_batch_excel():
-    return send_file("static/fullbatchresult.xlsx", as_attachment=True)
-
-@app.route("/download-formulas")
-def download_formulas():
-    return send_file("static/formulas.txt", as_attachment=True)
-
 @app.route("/optimize-ev-adoption", methods=["POST"])
 def optimize_ev_adoption():
     try:
@@ -263,32 +263,37 @@ def optimize_ev_adoption():
         wb = load_workbook(uploaded_file)
         ws = wb.active
 
-        required_cols = ["Start City", "Start State", "Destination City", "Destination State",
-                         "Diesel Mileage (1 Trip)", "EV Possible?", "EV Mileage (1 Trip)"]
-
-        for col in required_cols:
+        required = ["EV Possible?", "Diesel Total Cost", "EV Total Cost"]
+        for col in required:
             if col not in df.columns:
                 return f"<h3>Uploaded file is missing required column: '{col}'</h3>"
 
         eligible = df[df["EV Possible?"] == "Yes"].copy()
-        eligible["Savings"] = pd.to_numeric(df["Diesel Mileage (1 Trip)"], errors="coerce") - pd.to_numeric(df["EV Mileage (1 Trip)"], errors="coerce")
+        eligible["Savings"] = pd.to_numeric(df["Diesel Total Cost"], errors="coerce") - pd.to_numeric(df["EV Total Cost"], errors="coerce")
         eligible = eligible.dropna(subset=["Savings"])
         eligible_sorted = eligible.sort_values(by="Savings", ascending=False)
 
         top_n = int(len(eligible_sorted) * (percentage / 100))
-        highlight_rows = eligible_sorted.head(top_n).index + 3
+        highlight_rows = eligible_sorted.head(top_n).index + 3  # Excel row index offset
 
-        yellow_fill = PatternFill(start_color="FFFF00", end_color="FFFF00", fill_type="solid")
+        yellow = PatternFill(start_color="FFFF00", end_color="FFFF00", fill_type="solid")
         for row in highlight_rows:
             for col in range(1, ws.max_column + 1):
-                ws.cell(row=row, column=col).fill = yellow_fill
+                ws.cell(row=row, column=col).fill = yellow
 
-        output_path = "static/optimized_result.xlsx"
-        wb.save(output_path)
-
-        return send_file(output_path, as_attachment=True)
+        path = "static/optimized_result.xlsx"
+        wb.save(path)
+        return send_file(path, as_attachment=True)
     except Exception as e:
         return f'<h3>Error in EV optimization: {e}</h3>'
+
+@app.route("/download-batch-excel")
+def download_batch_excel():
+    return send_file("static/fullbatchresult.xlsx", as_attachment=True)
+
+@app.route("/download-formulas")
+def download_formulas():
+    return send_file("static/formulas.txt", as_attachment=True)
 
 if __name__ == "__main__":
     port = int(os.environ.get("PORT", 5000))
