@@ -2,6 +2,7 @@ from flask import Flask, render_template, request, send_file
 from geopy.geocoders import GoogleV3
 from geopy.distance import geodesic
 from openpyxl import load_workbook
+from concurrent.futures import ThreadPoolExecutor
 import pandas as pd
 import folium
 import requests
@@ -166,6 +167,7 @@ def result():
         )
     except Exception as e:
         return f"<h3>Error in single route: {e}</h3>"
+
 @app.route("/batch-result", methods=["POST"])
 def batch_result():
     try:
@@ -176,9 +178,8 @@ def batch_result():
         wb = load_workbook('static/fullbatchresult.xlsx')
         ws = wb.active
 
-        for i in range(len(df)):
+        def process_row(i, row):
             try:
-                row = df.iloc[i]
                 start_city = str(row["Start City"]).strip()
                 start_state = str(row["Start State"]).strip()
                 dest_city = str(row["Destination City"]).strip()
@@ -193,19 +194,19 @@ def batch_result():
                 if build_ev_path(start, end):
                     ev_stops = [start]
                     current = start
-                    ev_feasible = True
+                    feasible = True
                     while geodesic(current, end).miles > 225:
                         candidates = [
                             station for station in ev_charger_coords
                             if geodesic(current, station).miles <= 225 and geodesic(station, end).miles < geodesic(current, end).miles
                         ]
                         if not candidates:
-                            ev_feasible = False
+                            feasible = False
                             break
                         next_stop = max(candidates, key=lambda s: geodesic(current, s).miles)
                         ev_stops.append(next_stop)
                         current = next_stop
-                    if ev_feasible:
+                    if feasible:
                         ev_stops.append(end)
                         total_ev_miles = 0
                         for j in range(len(ev_stops) - 1):
@@ -230,6 +231,10 @@ def batch_result():
                 ws.cell(row=i + 3, column=8).value = ev_miles
             except Exception as err:
                 ws.cell(row=i + 3, column=1).value = f"Error: {str(err)}"
+
+        with ThreadPoolExecutor(max_workers=20) as executor:
+            for i in range(len(df)):
+                executor.submit(process_row, i, df.iloc[i])
 
         wb.save('static/fullbatchresult.xlsx')
         return render_template('batch_result.html', excel_download='/download-batch-excel', txt_download='/download-formulas')
