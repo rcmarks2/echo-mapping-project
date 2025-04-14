@@ -101,11 +101,16 @@ def result():
             ev_stops = [start]
             current = start
             while geodesic(current, end).miles > 225:
-                for station in ev_charger_coords:
-                    if geodesic(current, station).miles <= 225 and geodesic(station, end).miles < geodesic(current, end).miles:
-                        ev_stops.append(station)
-                        current = station
-                        break
+                candidates = [
+                    station for station in ev_charger_coords
+                    if geodesic(current, station).miles <= 225 and geodesic(station, end).miles < geodesic(current, end).miles
+                ]
+                if not candidates:
+                    ev_possible = False
+                    break
+                next_stop = max(candidates, key=lambda s: geodesic(current, s).miles)
+                ev_stops.append(next_stop)
+                current = next_stop
             ev_stops.append(end)
             routed_coords = []
             total_ev_miles = 0
