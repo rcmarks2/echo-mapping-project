@@ -4,7 +4,6 @@ from geopy.distance import geodesic
 from openpyxl import load_workbook
 from openpyxl.styles import PatternFill
 from concurrent.futures import ThreadPoolExecutor
-import threading
 import pandas as pd
 import folium
 import requests
@@ -180,19 +179,7 @@ def batch_result():
         uploaded_file = request.files['excel']
         if uploaded_file.filename == '':
             return '<h3>No file selected</h3>'
-        uploaded_file.save("static/temp_uploaded_batch.xlsx")
-
-        # Start background processing
-        thread = threading.Thread(target=process_batch_in_background)
-        thread.start()
-
-        return render_template("batch_result.html", excel_download='/download-batch-excel', txt_download='/download-formulas')
-    except Exception as e:
-        return f'<h3>Error in batch processing: {e}</h3>'
-
-def process_batch_in_background():
-    try:
-        df = pd.read_excel("static/temp_uploaded_batch.xlsx")
+        df = pd.read_excel(uploaded_file)
         wb = load_workbook("static/fullbatchresult.xlsx")
         ws = wb.active
 
@@ -252,8 +239,9 @@ def process_batch_in_background():
                 executor.submit(process_row, i, df.iloc[i])
 
         wb.save("static/fullbatchresult.xlsx")
+        return render_template("batch_result.html", excel_download='/download-batch-excel', txt_download='/download-formulas')
     except Exception as e:
-        print(f"Batch processing error: {e}")
+        return f'<h3>Error in batch processing: {e}</h3>'
 
 @app.route("/download-batch-excel")
 def download_batch_excel():
@@ -275,8 +263,12 @@ def optimize_ev_adoption():
         wb = load_workbook(uploaded_file)
         ws = wb.active
 
-        if "EV Possible?" not in df.columns or "Diesel Mileage (1 Trip)" not in df.columns or "EV Mileage (1 Trip)" not in df.columns:
-            return "<h3>Uploaded file is missing required columns.</h3>"
+        required_cols = ["Start City", "Start State", "Destination City", "Destination State",
+                         "Diesel Mileage (1 Trip)", "EV Possible?", "EV Mileage (1 Trip)"]
+
+        for col in required_cols:
+            if col not in df.columns:
+                return f"<h3>Uploaded file is missing required column: '{col}'</h3>"
 
         eligible = df[df["EV Possible?"] == "Yes"].copy()
         eligible["Savings"] = pd.to_numeric(df["Diesel Mileage (1 Trip)"], errors="coerce") - pd.to_numeric(df["EV Mileage (1 Trip)"], errors="coerce")
