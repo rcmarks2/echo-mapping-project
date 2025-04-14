@@ -6,6 +6,7 @@ import requests
 import os
 from geopy.distance import geodesic
 from openpyxl import load_workbook
+from openpyxl.styles import PatternFill
 import polyline
 
 app = Flask(__name__, template_folder="templates", static_folder="static")
@@ -245,43 +246,43 @@ def download_batch_excel():
 def download_formulas():
     return send_file("static/formulas.txt", as_attachment=True)
 
-@app.route("/optimize-ev-adoption", methods=["POST"])
+@app.route("/download-optimized")
+def download_optimized():
+    return send_file("static/optimized_result.xlsx", as_attachment=True)
+
+@app.route("/optimize-ev-adoption", methods=["GET", "POST"])
 def optimize_ev_adoption():
+    if request.method == "GET":
+        return render_template("optimize_ev_adoption.html")
+
     try:
         uploaded_file = request.files['excel']
-        if uploaded_file.filename == '':
-            return '<h3>No file selected</h3>'
+        percentage = int(request.form.get("percentage", 0))
+        if uploaded_file.filename == '' or not (0 < percentage <= 100):
+            return '<h3>Missing file or invalid percentage</h3>'
+
         df = pd.read_excel(uploaded_file)
-        suggestions = []
+        wb = load_workbook(uploaded_file)
+        ws = wb.active
 
-        for i in range(len(df)):
-            try:
-                row = df.iloc[i]
-                start = geocode_city_state(str(row["Start City"]).strip(), str(row["Start State"]).strip())
-                end = geocode_city_state(str(row["Destination City"]).strip(), str(row["Destination State"]).strip())
-                _, diesel_miles = get_routed_segment(start, end, return_distance=True)
-                if build_ev_path(start, end):
-                    ev_stops = [start]
-                    current = start
-                    while geodesic(current, end).miles > 225:
-                        candidates = [s for s in ev_charger_coords if geodesic(current, s).miles <= 225 and geodesic(s, end).miles < geodesic(current, end).miles]
-                        if not candidates:
-                            break
-                        next_stop = max(candidates, key=lambda s: geodesic(current, s).miles)
-                        ev_stops.append(next_stop)
-                        current = next_stop
-                    ev_stops.append(end)
-                    total_ev_miles = 0
-                    for j in range(len(ev_stops) - 1):
-                        _, leg_miles = get_routed_segment(ev_stops[j], ev_stops[j + 1], return_distance=True)
-                        total_ev_miles += leg_miles
-                    savings = diesel_miles - total_ev_miles
-                    suggestions.append((row["Start City"], row["Destination City"], round(diesel_miles, 1), round(total_ev_miles, 1), round(savings, 1)))
-            except Exception:
-                continue
+        if "EV Possible?" not in df.columns or "Diesel Mileage (1 Trip)" not in df.columns or "EV Mileage (1 Trip)" not in df.columns:
+            return "<h3>Uploaded file is missing required columns.</h3>"
 
-        suggestions.sort(key=lambda x: x[-1], reverse=True)
-        return render_template("optimize_ev_adoption.html", suggestions=suggestions[:10])
+        eligible = df[df["EV Possible?"] == "Yes"].copy()
+        eligible["Savings"] = pd.to_numeric(df["Diesel Mileage (1 Trip)"], errors="coerce") - pd.to_numeric(df["EV Mileage (1 Trip)"], errors="coerce")
+        eligible = eligible.dropna(subset=["Savings"])
+        eligible_sorted = eligible.sort_values(by="Savings", ascending=False)
+
+        top_n = int(len(eligible_sorted) * (percentage / 100))
+        highlight_rows = eligible_sorted.head(top_n).index + 3  # Excel row offset
+
+        yellow_fill = PatternFill(start_color="FFFF00", end_color="FFFF00", fill_type="solid")
+        for row in highlight_rows:
+            for col in range(1, ws.max_column + 1):
+                ws.cell(row=row, column=col).fill = yellow_fill
+
+        wb.save("static/optimized_result.xlsx")
+        return render_template("optimize_ev_adoption.html", download_link="/download-optimized")
     except Exception as e:
         return f'<h3>Error in EV optimization: {e}</h3>'
 
