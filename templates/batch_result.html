@@ -1,142 +1,76 @@
 <!DOCTYPE html>
-<html>
+<html lang="en">
 <head>
-    <title>Batch Results | Echo Route Tool</title>
+    <meta charset="UTF-8">
+    <title>Batch Results</title>
     <style>
         body {
-            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-            background-color: #f5f7fa;
-            margin: 0;
-            padding: 0;
-            color: #1f2937;
-        }
-        header {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            padding: 10px 30px;
-            background-color: #ffffff;
-            border-bottom: 2px solid #e2e8f0;
-        }
-        header img.logo-right {
-            height: 50px;
-        }
-        header img.logo-left {
-            height: 40px;
-        }
-        .container {
-            max-width: 1000px;
-            margin: 50px auto;
-            background-color: #ffffff;
+            font-family: Arial, sans-serif;
             padding: 40px;
-            border-radius: 12px;
-            box-shadow: 0 4px 12px rgba(0,0,0,0.08);
-            text-align: center;
+            background-color: #f8f9fa;
         }
         h1 {
-            color: #003366;
-            font-size: 32px;
-            margin-bottom: 10px;
+            color: #0072ce;
         }
-        .summary {
-            font-size: 18px;
-            margin-top: 10px;
-            margin-bottom: 30px;
-            color: #374151;
-        }
-        .button-group {
+        .download-buttons {
             margin-top: 30px;
         }
-        .button-group a {
-            padding: 12px 24px;
-            background-color: #003366;
+        .download-buttons a button {
+            background-color: #0072ce;
             color: white;
-            text-decoration: none;
-            border-radius: 6px;
-            font-size: 18px;
-            margin: 10px;
-            display: inline-block;
-        }
-        .button-group a:hover {
-            background-color: #0053a4;
-        }
-        h2 {
-            margin-top: 60px;
-            font-size: 26px;
-            color: #003366;
+            padding: 10px 20px;
+            border: none;
+            margin-right: 20px;
+            font-size: 16px;
+            cursor: pointer;
+            border-radius: 4px;
         }
         form {
-            margin-top: 20px;
+            margin-top: 40px;
         }
-        label {
+        form label {
             font-weight: bold;
-            font-size: 16px;
         }
-        input[type="file"],
-        input[type="number"] {
-            padding: 10px;
+        form input[type="file"],
+        form input[type="number"] {
+            display: block;
             margin-top: 8px;
-            font-size: 16px;
-            width: 100%;
-            max-width: 300px;
-            border-radius: 6px;
-            border: 1px solid #ccc;
+            margin-bottom: 16px;
+            padding: 8px;
+            font-size: 14px;
         }
-        button {
-            padding: 12px 24px;
-            background-color: #003366;
+        form button {
+            background-color: #28a745;
             color: white;
-            font-size: 16px;
+            padding: 10px 20px;
             border: none;
-            border-radius: 6px;
+            font-size: 16px;
             cursor: pointer;
-            margin-top: 20px;
-        }
-        button:hover {
-            background-color: #0053a4;
+            border-radius: 4px;
         }
     </style>
 </head>
 <body>
-    <header>
-        <img src="/static/uiuc_logo.png" alt="Illinois Logo" class="logo-left">
-        <img src="/static/echo_logo.png" alt="Echo Logo" class="logo-right">
-    </header>
 
-    <div class="container">
-        <h1>Batch Route Results</h1>
+    <h1>Batch Results</h1>
 
-        {% if total_routes and ev_feasible_routes is not none %}
-        <div class="summary">
-            <p><strong>Total Routes Submitted:</strong> {{ total_routes }}</p>
-            <p><strong>EV-Feasible Routes:</strong> {{ ev_feasible_routes }} ({{ ev_feasible_percentage }}%)</p>
-        </div>
-        {% endif %}
-
-        <div class="button-group">
-            <a href="/download-batch-excel">Download Results Excel File</a>
-            <a href="/download-formulas">Download Formulas</a>
-        </div>
-
-        <h2>EV Route Optimization</h2>
-        <p style="font-size: 18px; max-width: 700px; margin: 0 auto;">
-            Want to identify the best routes to convert to EV based on cost savings and emissions reduction?
-            Reupload your filled <strong>fullbatchresult.xlsx</strong> file and enter how many you'd like to convert.
-        </p>
-
-        <form action="/optimize-ev-adoption" method="post" enctype="multipart/form-data">
-            <div style="margin-top: 30px;">
-                <label for="optimization_file">Upload Your fullbatchresult.xlsx File</label><br>
-                <input type="file" name="optimization_file" id="optimization_file" accept=".xlsx" required>
-            </div>
-
-            <div style="margin-top: 30px;">
-                <label for="target_percent">Target EV Conversion Percentage</label><br>
-                <input type="number" name="target_percent" id="target_percent" min="1" max="100" required>
-            </div>
-
-            <button type="submit">Optimize EV Adoption</button>
-        </form>
+    <div class="download-buttons">
+        <a href="{{ excel_download }}"><button>Download fullbatchresult.xlsx</button></a>
+        <a href="{{ txt_download }}"><button>Download formulas.txt</button></a>
     </div>
+
+    <form action="/optimize-ev-adoption" method="post" enctype="multipart/form-data" target="_blank">
+        <h3>Optimize EV Adoption</h3>
+        <p>Upload your completed <strong>fullbatchresult.xlsx</strong> and enter what % of eligible routes you'd like to convert to EV. You’ll receive the optimized file as a download with those rows highlighted in yellow.</p>
+
+        <label for="excel">Upload fullbatchresult.xlsx:</label>
+        <input type="file" name="excel" accept=".xlsx" required>
+
+        <label for="percentage">Percentage of routes to convert to EV:</label>
+        <input type="number" name="percentage" min="1" max="100" required>
+
+        <button type="submit">Optimize EV Adoption</button>
+    </form>
+
 </body>
 </html>

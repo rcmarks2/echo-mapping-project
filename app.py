@@ -1,18 +1,19 @@
 from flask import Flask, render_template, request, send_file
 from geopy.geocoders import GoogleV3
+from geopy.distance import geodesic
+from openpyxl import load_workbook
+from openpyxl.styles import PatternFill
 import pandas as pd
 import folium
 import requests
 import os
-from geopy.distance import geodesic
-from openpyxl import load_workbook
-from openpyxl.styles import PatternFill
 import polyline
 
 app = Flask(__name__, template_folder="templates", static_folder="static")
 
 google_api_key = "AIzaSyCIPvsZMeb_NtkuElOooPCE46fB-bJEULg"
 geolocator = GoogleV3(api_key=google_api_key, timeout=10)
+geo_cache = {}
 
 @app.route("/")
 def index():
@@ -30,10 +31,14 @@ ev_chargers = ev_chargers.dropna(subset=["Latitude", "Longitude"])
 ev_charger_coords = [(row["Latitude"], row["Longitude"]) for _, row in ev_chargers.iterrows()]
 
 def geocode_city_state(city, state):
-    location = geolocator.geocode(f"{city}, {state}")
+    key = f"{city.strip().lower()}, {state.strip().lower()}"
+    if key in geo_cache:
+        return geo_cache[key]
+    location = geolocator.geocode(key)
     if not location:
         raise ValueError(f"Could not geocode {city}, {state}")
-    return (location.latitude, location.longitude)
+    geo_cache[key] = (location.latitude, location.longitude)
+    return geo_cache[key]
 
 def get_routed_segment(start, end, return_distance=False):
     url = "https://routes.googleapis.com/directions/v2:computeRoutes"
@@ -192,22 +197,25 @@ def batch_result():
                 end = geocode_city_state(dest_city, dest_state)
                 _, diesel_miles = get_routed_segment(start, end, return_distance=True)
 
-                if build_ev_path(start, end):
+                ev_possible = "No"
+                ev_miles = "N/A"
+
+                if geodesic(start, end).miles <= 1000:
                     ev_stops = [start]
                     current = start
-                    ev_feasible = True
+                    feasible = True
                     while geodesic(current, end).miles > 225:
                         candidates = [
                             station for station in ev_charger_coords
                             if geodesic(current, station).miles <= 225 and geodesic(station, end).miles < geodesic(current, end).miles
                         ]
                         if not candidates:
-                            ev_feasible = False
+                            feasible = False
                             break
                         next_stop = max(candidates, key=lambda s: geodesic(current, s).miles)
                         ev_stops.append(next_stop)
                         current = next_stop
-                    if ev_feasible:
+                    if feasible:
                         ev_stops.append(end)
                         total_ev_miles = 0
                         for j in range(len(ev_stops) - 1):
@@ -215,12 +223,6 @@ def batch_result():
                             total_ev_miles += leg_miles
                         ev_possible = "Yes"
                         ev_miles = round(total_ev_miles, 1)
-                    else:
-                        ev_possible = "No"
-                        ev_miles = "N/A"
-                else:
-                    ev_possible = "No"
-                    ev_miles = "N/A"
 
                 ws.cell(row=i + 3, column=1).value = start_city
                 ws.cell(row=i + 3, column=2).value = start_state
