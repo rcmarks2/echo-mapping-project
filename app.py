@@ -74,7 +74,7 @@ def generate_map(route_coords, used_chargers, all_chargers, label):
     for coord in all_chargers:
         folium.CircleMarker(location=coord, radius=4, color="gray", fill=True, fill_opacity=0.6).add_to(m)
     for coord in used_chargers:
-        folium.CircleMarker(location=coord, radius=6, color="#00cc44", fill=True, fill_opacity=1).add_to(m)
+        folium.CircleMarker(location=coord, radius=10, color="#00cc44", fill=True, fill_opacity=1).add_to(m)
     folium.Marker(route_coords[0], popup="Start", icon=folium.DivIcon(html=f"<b>{label[0]}</b>")).add_to(m)
     folium.Marker(route_coords[-1], popup="End", icon=folium.DivIcon(html=f"<b>{label[1]}</b>")).add_to(m)
     folium.PolyLine(route_coords, color="blue", weight=4).add_to(m)
