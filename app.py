@@ -2,7 +2,6 @@ from flask import Flask, render_template, request, send_file
 from geopy.geocoders import GoogleV3
 from geopy.distance import geodesic
 from openpyxl import load_workbook
-from openpyxl.styles import PatternFill
 from concurrent.futures import ThreadPoolExecutor
 import pandas as pd
 import folium
@@ -188,11 +187,12 @@ def batch_result():
         if uploaded_file.filename == '':
             return '<h3>No file selected</h3>'
         df = pd.read_excel(uploaded_file)
-        wb = load_workbook("static/fullbatchresult.xlsx")
+        wb = load_workbook('static/fullbatchresult.xlsx')
         ws = wb.active
 
-        def process_row(i, row):
+        for i in range(len(df)):
             try:
+                row = df.iloc[i]
                 start_city = str(row["Start City"]).strip()
                 start_state = str(row["Start State"]).strip()
                 dest_city = str(row["Destination City"]).strip()
@@ -204,25 +204,22 @@ def batch_result():
                 end = geocode_city_state(dest_city, dest_state)
                 _, diesel_miles = get_routed_segment(start, end, return_distance=True)
 
-                ev_possible = "No"
-                ev_miles = "N/A"
-
-                if geodesic(start, end).miles <= 1000:
+                if build_ev_path(start, end):
                     ev_stops = [start]
                     current = start
-                    feasible = True
+                    ev_feasible = True
                     while geodesic(current, end).miles > 225:
                         candidates = [
                             station for station in ev_charger_coords
                             if geodesic(current, station).miles <= 225 and geodesic(station, end).miles < geodesic(current, end).miles
                         ]
                         if not candidates:
-                            feasible = False
+                            ev_feasible = False
                             break
                         next_stop = max(candidates, key=lambda s: geodesic(current, s).miles)
                         ev_stops.append(next_stop)
                         current = next_stop
-                    if feasible:
+                    if ev_feasible:
                         ev_stops.append(end)
                         total_ev_miles = 0
                         for j in range(len(ev_stops) - 1):
@@ -230,6 +227,12 @@ def batch_result():
                             total_ev_miles += leg_miles
                         ev_possible = "Yes"
                         ev_miles = round(total_ev_miles, 1)
+                    else:
+                        ev_possible = "No"
+                        ev_miles = "N/A"
+                else:
+                    ev_possible = "No"
+                    ev_miles = "N/A"
 
                 ws.cell(row=i + 3, column=1).value = start_city
                 ws.cell(row=i + 3, column=2).value = start_state
@@ -242,50 +245,10 @@ def batch_result():
             except Exception as err:
                 ws.cell(row=i + 3, column=1).value = f"Error: {str(err)}"
 
-        with ThreadPoolExecutor(max_workers=8) as executor:
-            for i in range(len(df)):
-                executor.submit(process_row, i, df.iloc[i])
-
-        wb.save("static/fullbatchresult.xlsx")
-        return render_template("batch_result.html", excel_download='/download-batch-excel', txt_download='/download-formulas')
+        wb.save('static/fullbatchresult.xlsx')
+        return render_template('batch_result.html', excel_download='/download-batch-excel', txt_download='/download-formulas')
     except Exception as e:
         return f'<h3>Error in batch processing: {e}</h3>'
-
-@app.route("/optimize-ev-adoption", methods=["POST"])
-def optimize_ev_adoption():
-    try:
-        uploaded_file = request.files['excel']
-        percentage = int(request.form.get("percentage", 0))
-        if uploaded_file.filename == '' or not (0 < percentage <= 100):
-            return '<h3>Missing file or invalid percentage</h3>'
-
-        df = pd.read_excel(uploaded_file)
-        wb = load_workbook(uploaded_file)
-        ws = wb.active
-
-        required = ["EV Possible?", "Diesel Total Cost", "EV Total Cost"]
-        for col in required:
-            if col not in df.columns:
-                return f"<h3>Uploaded file is missing required column: '{col}'</h3>"
-
-        eligible = df[df["EV Possible?"] == "Yes"].copy()
-        eligible["Savings"] = pd.to_numeric(df["Diesel Total Cost"], errors="coerce") - pd.to_numeric(df["EV Total Cost"], errors="coerce")
-        eligible = eligible.dropna(subset=["Savings"])
-        eligible_sorted = eligible.sort_values(by="Savings", ascending=False)
-
-        top_n = int(len(eligible_sorted) * (percentage / 100))
-        highlight_rows = eligible_sorted.head(top_n).index + 3  # Excel row index offset
-
-        yellow = PatternFill(start_color="FFFF00", end_color="FFFF00", fill_type="solid")
-        for row in highlight_rows:
-            for col in range(1, ws.max_column + 1):
-                ws.cell(row=row, column=col).fill = yellow
-
-        path = "static/optimized_result.xlsx"
-        wb.save(path)
-        return send_file(path, as_attachment=True)
-    except Exception as e:
-        return f'<h3>Error in EV optimization: {e}</h3>'
 
 @app.route("/download-batch-excel")
 def download_batch_excel():

@@ -1,102 +1,72 @@
-<!DOCTYPE html>
-<html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <title>Instructions</title>
-    <style>
-        body {
-            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-            background-color: #f8f9fa;
-            padding: 0;
-            margin: 0;
-        }
+<style>
+    body {
+        font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        background-color: #f8f9fa;
+        padding: 0;
+        margin: 0;
+        text-align: center;
+    }
 
-        .banner {
-            background-color: #0072ce;
-            color: white;
-            padding: 20px 40px;
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-        }
+    .banner {
+        background-color: #002f6c;
+        color: white;
+        padding: 20px 40px;
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+    }
 
-        .banner h1 {
-            margin: 0;
-            font-size: 28px;
-        }
+    .banner h1 {
+        margin: 0;
+        font-size: 28px;
+    }
 
-        .banner img {
-            height: 50px;
-        }
+    .banner img {
+        height: 50px;
+    }
 
-        .container {
-            max-width: 1100px;
-            margin: 40px auto;
-            padding: 0 20px;
-            background-color: white;
-            border-radius: 10px;
-            box-shadow: 0 0 10px rgba(0,0,0,0.05);
-        }
+    .container {
+        max-width: 1100px;
+        margin: 40px auto;
+        padding: 0 20px;
+        background-color: white;
+        border-radius: 10px;
+        box-shadow: 0 0 10px rgba(0,0,0,0.05);
+        text-align: center;
+    }
 
-        h2 {
-            color: #0056b3;
-            margin-top: 40px;
-        }
+    h2 {
+        color: #002f6c;
+        margin-top: 40px;
+    }
 
-        p {
-            font-size: 16px;
-            line-height: 1.6;
-        }
+    p {
+        font-size: 16px;
+        line-height: 1.6;
+    }
 
-        img.screenshot {
-            max-width: 100%;
-            margin: 20px 0;
-            border: 1px solid #ccc;
-            border-radius: 6px;
-            box-shadow: 2px 2px 8px rgba(0,0,0,0.1);
-        }
+    ul {
+        list-style-position: inside;
+        display: inline-block;
+        text-align: left;
+    }
 
-        .footer {
-            margin-top: 60px;
-            padding: 20px 40px;
-            display: flex;
-            justify-content: flex-start;
-        }
+    img.screenshot {
+        max-width: 100%;
+        margin: 20px 0;
+        border: 1px solid #ccc;
+        border-radius: 6px;
+        box-shadow: 2px 2px 8px rgba(0,0,0,0.1);
+    }
 
-        .footer img {
-            height: 45px;
-        }
-    </style>
-</head>
-<body>
+    .footer {
+        margin-top: 60px;
+        padding: 20px 40px;
+        display: flex;
+        justify-content: flex-start;
+    }
 
-    <div class="banner">
-        <h1>Instructions</h1>
-        <img src="/static/echo_logo.png" alt="Echo Logo">
-    </div>
-
-    <div class="container">
-        <h2>1. Compare Diesel vs EV Routes (Single Route)</h2>
-        <p>Use the form on the homepage to compare a single diesel truck route vs. EV truck route. Just enter:</p>
-        <ul>
-            <li>Start and end locations (e.g., Chicago, IL → Atlanta, GA)</li>
-            <li>Optional diesel MPG (defaults to 9)</li>
-            <li>Number of annual trips</li>
-        </ul>
-        <img src="/static/Single Route Section.png" alt="Single Route Form" class="screenshot">
-
-        <h2>2. Upload Multiple Routes at Once (Batch Upload)</h2>
-        <p>You can upload an Excel file with multiple routes to process them all at once. Make sure your file matches the format exactly.</p>
-        <img src="/static/Batch Route Excel File Upload.png" alt="Batch Upload Example" class="screenshot">
-
-        <h2>3. Need a Template?</h2>
-        <p>You can download a blank Excel template from the homepage to get started with batch uploads:</p>
-        <img src="/static/Batch Route Template Download.png" alt="Download Template" class="screenshot">
-    </div>
-
-    <div class="footer">
-        <img src="/static/uiuc_logo.png" alt="Illinois Logo">
-    </div>
-
-</body>
-</html>
+    .footer img {
+        height: 45px;
+    }
+</style>
