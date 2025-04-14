@@ -11,11 +11,13 @@ import polyline
 
 app = Flask(__name__, template_folder="templates", static_folder="static")
 
+# === CONFIGURATION ===
 google_api_key = "AIzaSyCIPvsZMeb_NtkuElOooPCE46fB-bJEULg"
 geolocator = GoogleV3(api_key=google_api_key, timeout=10)
-geo_cache = {}
-route_cache = {}
+geo_cache = {}  # Geocode result cache
+route_cache = {}  # Routing distance cache
 
+# === ROUTES ===
 @app.route("/")
 def index():
     return render_template("index.html")
@@ -24,13 +26,14 @@ def index():
 def instructions():
     return render_template("instructions.html")
 
-# Load EV chargers
+# === EV CHARGERS ===
 ev_chargers = pd.concat([
     pd.read_excel(f"static/{f}.xlsx") for f in [1, 2, 3, 4, 5, 6, 7]
 ])
 ev_chargers = ev_chargers.dropna(subset=["Latitude", "Longitude"])
 ev_charger_coords = [(row["Latitude"], row["Longitude"]) for _, row in ev_chargers.iterrows()]
 
+# === UTILITIES ===
 def geocode_city_state(city, state):
     key = f"{city.strip().lower()}, {state.strip().lower()}"
     if key in geo_cache:
@@ -45,8 +48,8 @@ def get_routed_segment(start, end, return_distance=False):
     cache_key = (start, end)
     if cache_key in route_cache:
         if return_distance:
-            return route_cache[cache_key]['coords'], route_cache[cache_key]['miles']
-        return route_cache[cache_key]['coords']
+            return route_cache[cache_key]["coords"], route_cache[cache_key]["miles"]
+        return route_cache[cache_key]["coords"]
 
     url = "https://routes.googleapis.com/directions/v2:computeRoutes"
     headers = {
@@ -59,6 +62,7 @@ def get_routed_segment(start, end, return_distance=False):
         "destination": {"location": {"latLng": {"latitude": end[0], "longitude": end[1]}}},
         "travelMode": "DRIVE"
     }
+
     response = requests.post(url, json=body, headers=headers)
     if response.status_code == 200:
         data = response.json()
@@ -66,7 +70,7 @@ def get_routed_segment(start, end, return_distance=False):
             encoded = data["routes"][0]["polyline"]["encodedPolyline"]
             coords = polyline.decode(encoded)
             miles = data["routes"][0]["distanceMeters"] / 1609.34
-            route_cache[cache_key] = {'coords': coords, 'miles': miles}
+            route_cache[cache_key] = {"coords": coords, "miles": miles}
             if return_distance:
                 return coords, miles
             return coords
@@ -186,13 +190,13 @@ def batch_result():
         uploaded_file = request.files['excel']
         if uploaded_file.filename == '':
             return '<h3>No file selected</h3>'
+
         df = pd.read_excel(uploaded_file)
         wb = load_workbook('static/fullbatchresult.xlsx')
         ws = wb.active
 
-        for i in range(len(df)):
+        def process_row(i, row):
             try:
-                row = df.iloc[i]
                 start_city = str(row["Start City"]).strip()
                 start_state = str(row["Start State"]).strip()
                 dest_city = str(row["Destination City"]).strip()
@@ -204,22 +208,25 @@ def batch_result():
                 end = geocode_city_state(dest_city, dest_state)
                 _, diesel_miles = get_routed_segment(start, end, return_distance=True)
 
+                ev_possible = "No"
+                ev_miles = "N/A"
+
                 if build_ev_path(start, end):
                     ev_stops = [start]
                     current = start
-                    ev_feasible = True
+                    feasible = True
                     while geodesic(current, end).miles > 225:
                         candidates = [
                             station for station in ev_charger_coords
                             if geodesic(current, station).miles <= 225 and geodesic(station, end).miles < geodesic(current, end).miles
                         ]
                         if not candidates:
-                            ev_feasible = False
+                            feasible = False
                             break
                         next_stop = max(candidates, key=lambda s: geodesic(current, s).miles)
                         ev_stops.append(next_stop)
                         current = next_stop
-                    if ev_feasible:
+                    if feasible:
                         ev_stops.append(end)
                         total_ev_miles = 0
                         for j in range(len(ev_stops) - 1):
@@ -227,12 +234,6 @@ def batch_result():
                             total_ev_miles += leg_miles
                         ev_possible = "Yes"
                         ev_miles = round(total_ev_miles, 1)
-                    else:
-                        ev_possible = "No"
-                        ev_miles = "N/A"
-                else:
-                    ev_possible = "No"
-                    ev_miles = "N/A"
 
                 ws.cell(row=i + 3, column=1).value = start_city
                 ws.cell(row=i + 3, column=2).value = start_state
@@ -244,6 +245,11 @@ def batch_result():
                 ws.cell(row=i + 3, column=8).value = ev_miles
             except Exception as err:
                 ws.cell(row=i + 3, column=1).value = f"Error: {str(err)}"
+
+        # 🚀 Process rows in parallel using threads
+        with ThreadPoolExecutor(max_workers=20) as executor:
+            for i in range(len(df)):
+                executor.submit(process_row, i, df.iloc[i])
 
         wb.save('static/fullbatchresult.xlsx')
         return render_template('batch_result.html', excel_download='/download-batch-excel', txt_download='/download-formulas')
