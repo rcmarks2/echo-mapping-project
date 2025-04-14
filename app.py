@@ -246,15 +246,8 @@ def download_batch_excel():
 def download_formulas():
     return send_file("static/formulas.txt", as_attachment=True)
 
-@app.route("/download-optimized")
-def download_optimized():
-    return send_file("static/optimized_result.xlsx", as_attachment=True)
-
-@app.route("/optimize-ev-adoption", methods=["GET", "POST"])
+@app.route("/optimize-ev-adoption", methods=["POST"])
 def optimize_ev_adoption():
-    if request.method == "GET":
-        return render_template("optimize_ev_adoption.html")
-
     try:
         uploaded_file = request.files['excel']
         percentage = int(request.form.get("percentage", 0))
@@ -274,15 +267,17 @@ def optimize_ev_adoption():
         eligible_sorted = eligible.sort_values(by="Savings", ascending=False)
 
         top_n = int(len(eligible_sorted) * (percentage / 100))
-        highlight_rows = eligible_sorted.head(top_n).index + 3  # Excel row offset
+        highlight_rows = eligible_sorted.head(top_n).index + 3
 
         yellow_fill = PatternFill(start_color="FFFF00", end_color="FFFF00", fill_type="solid")
         for row in highlight_rows:
             for col in range(1, ws.max_column + 1):
                 ws.cell(row=row, column=col).fill = yellow_fill
 
-        wb.save("static/optimized_result.xlsx")
-        return render_template("optimize_ev_adoption.html", download_link="/download-optimized")
+        output_path = "static/optimized_result.xlsx"
+        wb.save(output_path)
+
+        return send_file(output_path, as_attachment=True)
     except Exception as e:
         return f'<h3>Error in EV optimization: {e}</h3>'
 
