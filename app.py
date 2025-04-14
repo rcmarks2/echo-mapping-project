@@ -3,6 +3,8 @@ from geopy.geocoders import GoogleV3
 from geopy.distance import geodesic
 from openpyxl import load_workbook
 from openpyxl.styles import PatternFill
+from concurrent.futures import ThreadPoolExecutor
+import threading
 import pandas as pd
 import folium
 import requests
@@ -172,20 +174,30 @@ def result():
         )
     except Exception as e:
         return f"<h3>Error in single route: {e}</h3>"
-
 @app.route("/batch-result", methods=["POST"])
 def batch_result():
     try:
         uploaded_file = request.files['excel']
         if uploaded_file.filename == '':
             return '<h3>No file selected</h3>'
-        df = pd.read_excel(uploaded_file)
-        wb = load_workbook('static/fullbatchresult.xlsx')
+        uploaded_file.save("static/temp_uploaded_batch.xlsx")
+
+        # Start background processing
+        thread = threading.Thread(target=process_batch_in_background)
+        thread.start()
+
+        return render_template("batch_result.html", excel_download='/download-batch-excel', txt_download='/download-formulas')
+    except Exception as e:
+        return f'<h3>Error in batch processing: {e}</h3>'
+
+def process_batch_in_background():
+    try:
+        df = pd.read_excel("static/temp_uploaded_batch.xlsx")
+        wb = load_workbook("static/fullbatchresult.xlsx")
         ws = wb.active
 
-        for i in range(len(df)):
+        def process_row(i, row):
             try:
-                row = df.iloc[i]
                 start_city = str(row["Start City"]).strip()
                 start_state = str(row["Start State"]).strip()
                 dest_city = str(row["Destination City"]).strip()
@@ -235,10 +247,13 @@ def batch_result():
             except Exception as err:
                 ws.cell(row=i + 3, column=1).value = f"Error: {str(err)}"
 
-        wb.save('static/fullbatchresult.xlsx')
-        return render_template('batch_result.html', excel_download='/download-batch-excel', txt_download='/download-formulas')
+        with ThreadPoolExecutor(max_workers=8) as executor:
+            for i in range(len(df)):
+                executor.submit(process_row, i, df.iloc[i])
+
+        wb.save("static/fullbatchresult.xlsx")
     except Exception as e:
-        return f'<h3>Error in batch processing: {e}</h3>'
+        print(f"Batch processing error: {e}")
 
 @app.route("/download-batch-excel")
 def download_batch_excel():
