@@ -1,161 +1,121 @@
 <!DOCTYPE html>
-<html lang="en">
+<html>
 <head>
-    <meta charset="UTF-8">
-    <title>Echo Global Logistics Route Planner</title>
+    <title>Echo Global Logistics Route Tool</title>
     <style>
         body {
-            font-family: 'Segoe UI', sans-serif;
-            background-color: #ffffff;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background-color: #f5f7fa;
             margin: 0;
             padding: 0;
         }
-
-        .banner {
-            background-color: #003366;
-            color: white;
-            padding: 20px;
-            position: relative;
+        header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 10px 30px;
+            background-color: #ffffff;
+            border-bottom: 2px solid #e2e8f0;
         }
-
-        .banner h1 {
-            margin: 0;
-            font-size: 28px;
-        }
-
-        .logo-echo {
-            position: absolute;
-            top: 10px;
-            right: 20px;
+        header img.logo-right {
             height: 50px;
         }
-
-        .logo-illinois {
-            position: fixed;
-            bottom: 10px;
-            left: 20px;
+        header img.logo-left {
             height: 40px;
         }
-
         .container {
-            max-width: 800px;
-            margin: 60px auto;
-            padding: 20px;
+            max-width: 1000px;
+            margin: 50px auto;
+            background-color: #ffffff;
+            padding: 40px;
+            border-radius: 12px;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.08);
         }
-
-        h2 {
+        h1 {
+            text-align: center;
             color: #003366;
         }
-
         form {
-            background-color: #f4f4f4;
-            padding: 25px;
-            border-radius: 10px;
-            margin-bottom: 50px;
+            display: flex;
+            flex-direction: column;
+            gap: 20px;
+            font-size: 18px;
         }
-
         label {
-            display: block;
             font-weight: bold;
-            margin-top: 12px;
+            margin-bottom: 5px;
         }
-
         input[type="text"],
-        input[type="number"],
-        input[type="file"] {
-            width: 100%;
+        input[type="number"] {
             padding: 10px;
-            margin-top: 5px;
-            margin-bottom: 15px;
-            border: 1px solid #ccc;
-            border-radius: 5px;
-        }
-
-        button {
-            background-color: #28a745;
-            color: white;
             font-size: 16px;
-            padding: 10px 24px;
+            border: 1px solid #ccc;
+            border-radius: 6px;
+        }
+        button {
+            padding: 14px;
+            font-size: 18px;
+            background-color: #003366;
+            color: white;
             border: none;
             border-radius: 6px;
             cursor: pointer;
-            margin-top: 10px;
         }
-
         button:hover {
-            background-color: #218838;
+            background-color: #0053a4;
         }
-
-        hr {
-            margin: 60px 0;
-            border: none;
-            border-top: 2px solid #ccc;
+        .instructions-link {
+            text-align: center;
+            margin: 30px 40px 0;
         }
-
-        .template-box {
-            background-color: #f0f8ff;
-            border: 1px solid #ccc;
-            padding: 15px;
-            margin-bottom: 25px;
-            border-radius: 8px;
+        .instructions-link p {
+            font-size: 20px;
+            color: #1f2937;
         }
-
-        .template-box p {
-            margin: 5px 0;
-        }
-
-        .template-box a button {
+        .instructions-link a {
+            padding: 12px 24px;
+            background-color: #003366;
+            color: white;
+            text-decoration: none;
+            border-radius: 6px;
+            font-size: 18px;
+            display: inline-block;
             margin-top: 10px;
         }
     </style>
 </head>
 <body>
+    <header>
+        <img src="/static/uiuc_logo.png" alt="Illinois Logo" class="logo-left">
+        <img src="/static/echo_logo.png" alt="Echo Logo" class="logo-right">
+    </header>
 
-    <div class="banner">
-        <h1>Echo Global Route Planning Tool</h1>
-        <img class="logo-echo" src="/static/echo_logo.png" alt="Echo Logo">
+    <div class="instructions-link">
+        <p>First time? Click below for instructions on how to use our tool.</p>
+        <a href="/instructions">View Instructions</a>
     </div>
 
-    <img class="logo-illinois" src="/static/uiuc_logo.png" alt="Illinois Logo">
-
     <div class="container">
-
-        <h2>Plan a Single Route</h2>
-        <form method="POST" action="/result">
-            <label for="start">Start Location (City, State)</label>
-            <input type="text" id="start" name="start" required>
-
-            <label for="end">End Location (City, State)</label>
-            <input type="text" id="end" name="end" required>
-
-            <label for="mpg">Miles Per Gallon (Optional)</label>
-            <input type="number" name="mpg" placeholder="Defaults to 9">
-
-            <label for="annual_trips">Annual Trips</label>
-            <input type="number" name="annual_trips" required min="1">
-
-            <button type="submit">Generate Route</button>
+        <h1>Compare Diesel vs EV Routes</h1>
+        <form action="/result" method="post">
+            <div>
+                <label for="start">Start Location (City, State)</label>
+                <input type="text" id="start" name="start" placeholder="e.g., Chicago, IL" required>
+            </div>
+            <div>
+                <label for="end">End Location (City, State)</label>
+                <input type="text" id="end" name="end" placeholder="e.g., Atlanta, GA" required>
+            </div>
+            <div>
+                <label for="mpg">Diesel Truck MPG (optional)</label>
+                <input type="number" id="mpg" name="mpg" step="0.1" placeholder="Defaults to 9">
+            </div>
+            <div>
+                <label for="annual_trips">Annual Trips</label>
+                <input type="number" id="annual_trips" name="annual_trips" min="1" required>
+            </div>
+            <button type="submit">Generate Comparison</button>
         </form>
-
-        <hr>
-
-        <h2>Upload Excel to Batch Plan Routes</h2>
-        <form method="POST" action="/batch-result" enctype="multipart/form-data">
-            <label for="excel">Upload Excel File (.xlsx)</label>
-            <input type="file" name="excel" accept=".xlsx" required>
-
-            <button type="submit">Process Batch Routes</button>
-        </form>
-
-        <!-- 🔁 MOVED + UPDATED TEMPLATE INFO BOX -->
-        <div class="template-box">
-            <p><strong>Need a starting point?</strong></p>
-            <p>Download this file, enter your route information, and reupload the file with your data in it to the Excel upload below.</p>
-            <a href="/static/uploadtemplate.xlsx" download>
-                <button type="button">Download Excel Template</button>
-            </a>
-        </div>
-
     </div>
 </body>
 </html>
