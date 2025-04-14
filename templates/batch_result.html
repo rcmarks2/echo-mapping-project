@@ -1,100 +1,142 @@
 <!DOCTYPE html>
-<html lang="en">
+<html>
 <head>
-    <meta charset="UTF-8">
-    <title>Batch Results - Echo Global Logistics</title>
+    <title>Batch Results | Echo Route Tool</title>
     <style>
         body {
-            font-family: 'Segoe UI', sans-serif;
-            background-color: #ffffff;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background-color: #f5f7fa;
             margin: 0;
             padding: 0;
+            color: #1f2937;
         }
-
-        .banner {
-            background-color: #003366;
-            color: white;
-            padding: 20px;
-            position: relative;
+        header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 10px 30px;
+            background-color: #ffffff;
+            border-bottom: 2px solid #e2e8f0;
         }
-
-        .banner h1 {
-            margin: 0;
-            font-size: 28px;
-        }
-
-        .logo-echo {
-            position: absolute;
-            top: 10px;
-            right: 20px;
+        header img.logo-right {
             height: 50px;
         }
-
-        .logo-illinois {
-            position: fixed;
-            bottom: 10px;
-            left: 20px;
+        header img.logo-left {
             height: 40px;
         }
-
         .container {
-            max-width: 800px;
-            margin: 60px auto;
-            padding: 20px;
+            max-width: 1000px;
+            margin: 50px auto;
+            background-color: #ffffff;
+            padding: 40px;
+            border-radius: 12px;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.08);
+            text-align: center;
         }
-
+        h1 {
+            color: #003366;
+            font-size: 32px;
+            margin-bottom: 10px;
+        }
+        .summary {
+            font-size: 18px;
+            margin-top: 10px;
+            margin-bottom: 30px;
+            color: #374151;
+        }
+        .button-group {
+            margin-top: 30px;
+        }
+        .button-group a {
+            padding: 12px 24px;
+            background-color: #003366;
+            color: white;
+            text-decoration: none;
+            border-radius: 6px;
+            font-size: 18px;
+            margin: 10px;
+            display: inline-block;
+        }
+        .button-group a:hover {
+            background-color: #0053a4;
+        }
         h2 {
+            margin-top: 60px;
+            font-size: 26px;
             color: #003366;
         }
-
-        .button-container {
-            margin-top: 40px;
+        form {
+            margin-top: 20px;
         }
-
+        label {
+            font-weight: bold;
+            font-size: 16px;
+        }
+        input[type="file"],
+        input[type="number"] {
+            padding: 10px;
+            margin-top: 8px;
+            font-size: 16px;
+            width: 100%;
+            max-width: 300px;
+            border-radius: 6px;
+            border: 1px solid #ccc;
+        }
         button {
-            background-color: #28a745;
+            padding: 12px 24px;
+            background-color: #003366;
             color: white;
             font-size: 16px;
-            padding: 10px 24px;
             border: none;
             border-radius: 6px;
             cursor: pointer;
-            margin: 10px;
+            margin-top: 20px;
         }
-
         button:hover {
-            background-color: #218838;
-        }
-
-        a {
-            text-decoration: none;
+            background-color: #0053a4;
         }
     </style>
 </head>
 <body>
-
-    <div class="banner">
-        <h1>Batch Route Results</h1>
-        <img class="logo-echo" src="/static/echo_logo.png" alt="Echo Logo">
-    </div>
-
-    <img class="logo-illinois" src="/static/uiuc_logo.png" alt="Illinois Logo">
+    <header>
+        <img src="/static/uiuc_logo.png" alt="Illinois Logo" class="logo-left">
+        <img src="/static/echo_logo.png" alt="Echo Logo" class="logo-right">
+    </header>
 
     <div class="container">
-        <h2>Your route data has been processed.</h2>
-        <p>You can now download your results below.</p>
+        <h1>Batch Route Results</h1>
 
-        <div class="button-container">
-            <!-- ✅ THIS FIXES THE DOWNLOAD -->
-            <a href="{{ excel_download }}" download>
-                <button>Download Excel File</button>
-            </a>
-
-            <a href="{{ txt_download }}" download>
-                <button>Download Formulas File</button>
-            </a>
+        {% if total_routes and ev_feasible_routes is not none %}
+        <div class="summary">
+            <p><strong>Total Routes Submitted:</strong> {{ total_routes }}</p>
+            <p><strong>EV-Feasible Routes:</strong> {{ ev_feasible_routes }} ({{ ev_feasible_percentage }}%)</p>
         </div>
-    </div>
+        {% endif %}
 
+        <div class="button-group">
+            <a href="/download-batch-excel">Download Results Excel File</a>
+            <a href="/download-formulas">Download Formulas</a>
+        </div>
+
+        <h2>EV Route Optimization</h2>
+        <p style="font-size: 18px; max-width: 700px; margin: 0 auto;">
+            Want to identify the best routes to convert to EV based on cost savings and emissions reduction?
+            Reupload your filled <strong>fullbatchresult.xlsx</strong> file and enter how many you'd like to convert.
+        </p>
+
+        <form action="/optimize-ev-adoption" method="post" enctype="multipart/form-data">
+            <div style="margin-top: 30px;">
+                <label for="optimization_file">Upload Your fullbatchresult.xlsx File</label><br>
+                <input type="file" name="optimization_file" id="optimization_file" accept=".xlsx" required>
+            </div>
+
+            <div style="margin-top: 30px;">
+                <label for="target_percent">Target EV Conversion Percentage</label><br>
+                <input type="number" name="target_percent" id="target_percent" min="1" max="100" required>
+            </div>
+
+            <button type="submit">Optimize EV Adoption</button>
+        </form>
+    </div>
 </body>
 </html>

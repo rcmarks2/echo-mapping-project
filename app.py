@@ -83,6 +83,7 @@ def generate_map(route_coords, used_chargers, all_chargers, label):
     folium.Marker(route_coords[-1], popup="End", icon=folium.DivIcon(html=f"<b>{label[1]}</b>")).add_to(m)
     folium.PolyLine(route_coords, color="blue", weight=4).add_to(m)
     return m._repr_html_()
+
 @app.route("/result", methods=["POST"])
 def result():
     try:
@@ -97,7 +98,6 @@ def result():
         diesel_coords, diesel_miles = get_routed_segment(start, end, return_distance=True)
         diesel_total = diesel_miles * trips
 
-        # Labor cost for Diesel
         hourly_rate = 75000 / 52 / 6 / 8
         diesel_hours = diesel_miles / 50
         diesel_labor_cost = hourly_rate * diesel_hours
@@ -134,7 +134,6 @@ def result():
                 routed_coords.extend(leg_coords)
                 total_ev_miles += leg_miles
 
-            # Labor cost for EV
             ev_hours = total_ev_miles / 50
             ev_labor_cost = hourly_rate * ev_hours
 
@@ -245,6 +244,46 @@ def download_batch_excel():
 @app.route("/download-formulas")
 def download_formulas():
     return send_file("static/formulas.txt", as_attachment=True)
+
+@app.route("/optimize-ev-adoption", methods=["POST"])
+def optimize_ev_adoption():
+    try:
+        uploaded_file = request.files['excel']
+        if uploaded_file.filename == '':
+            return '<h3>No file selected</h3>'
+        df = pd.read_excel(uploaded_file)
+        suggestions = []
+
+        for i in range(len(df)):
+            try:
+                row = df.iloc[i]
+                start = geocode_city_state(str(row["Start City"]).strip(), str(row["Start State"]).strip())
+                end = geocode_city_state(str(row["Destination City"]).strip(), str(row["Destination State"]).strip())
+                _, diesel_miles = get_routed_segment(start, end, return_distance=True)
+                if build_ev_path(start, end):
+                    ev_stops = [start]
+                    current = start
+                    while geodesic(current, end).miles > 225:
+                        candidates = [s for s in ev_charger_coords if geodesic(current, s).miles <= 225 and geodesic(s, end).miles < geodesic(current, end).miles]
+                        if not candidates:
+                            break
+                        next_stop = max(candidates, key=lambda s: geodesic(current, s).miles)
+                        ev_stops.append(next_stop)
+                        current = next_stop
+                    ev_stops.append(end)
+                    total_ev_miles = 0
+                    for j in range(len(ev_stops) - 1):
+                        _, leg_miles = get_routed_segment(ev_stops[j], ev_stops[j + 1], return_distance=True)
+                        total_ev_miles += leg_miles
+                    savings = diesel_miles - total_ev_miles
+                    suggestions.append((row["Start City"], row["Destination City"], round(diesel_miles, 1), round(total_ev_miles, 1), round(savings, 1)))
+            except Exception:
+                continue
+
+        suggestions.sort(key=lambda x: x[-1], reverse=True)
+        return render_template("optimize_ev_adoption.html", suggestions=suggestions[:10])
+    except Exception as e:
+        return f'<h3>Error in EV optimization: {e}</h3>'
 
 if __name__ == "__main__":
     port = int(os.environ.get("PORT", 5000))
