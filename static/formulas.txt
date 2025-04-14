@@ -3,13 +3,13 @@ ECHO GLOBAL LOGISTICS - ROUTE CALCULATION FORMULAS
 DIESEL TRUCK FORMULAS
 
 1. Fuel Cost:
-   = (Annual Trips) × (Miles per Trip ÷ MPG) × $3.59
+   = (Annual Trips) × (Miles per Trip ÷ MPG) × $3.59 (Average US Diesel Price)
 
 2. Maintenance Cost:
-   = (One Trip Miles) × (17,500 ÷ Annual Mileage)
+   = (One Trip Miles) × [17,500 (Average Yearly Truck Maintenance Cost) ÷ 62,169 (Average Number Miles a Truck Covers in a Year)]
 
 3. Depreciation Cost:
-   = (One Trip Miles) × ($16,600 ÷ 750,000)
+   = (One Trip Miles) × [$166,000 (Average Truck Purchase Cost) ÷ 750,000 (Average Lifetime Miles for a Truck)]
 
 4. Total Annual Cost:
    = Fuel Cost + Maintenance Cost + Depreciation Cost
@@ -20,14 +20,15 @@ DIESEL TRUCK FORMULAS
 
 ELECTRIC TRUCK FORMULAS
 
-1. Battery Charge Cost:
-   = (Total Miles ÷ 20.39) × $2.208
+1. Fuel Cost:
+   = (Annual Trips) × (Miles per Trip ÷ MPG) × $3.59 (Average US Diesel Price)
 
 2. Maintenance Cost:
-   = (One Trip Miles) × (10,500 ÷ Annual Mileage)
+   = (One Trip Miles) × [10,500 (Average Yearly Truck Maintenance Cost) ÷ 62,169 (Average Number Miles a Truck Covers in a Year)]
 
 3. Depreciation Cost:
-   = (Annual Miles) × ($250,000 ÷ 750,000)
+   = (One Trip Miles) × [$250,000 (Average Truck Purchase Cost) ÷ 750,000 (Average Lifetime Miles for a Truck)]
+
 
 4. Total Annual Cost:
    = Charge Cost + Maintenance Cost + Depreciation Cost

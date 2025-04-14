@@ -93,7 +93,7 @@ def result():
         end = geocode_city_state(end_city.strip(), end_state.strip())
         diesel_coords, diesel_miles = get_routed_segment(start, end, return_distance=True)
         diesel_total = diesel_miles * trips
-        diesel_cost = trips * (diesel_miles / mpg) * 3.59 + diesel_miles * (17500 / diesel_total) + diesel_total * (16600 / 750000)
+        diesel_cost = trips * (diesel_miles / mpg) * 3.59 + diesel_miles * (17500 / 62169) + diesel_total * (166000 / 750000)
         diesel_emissions = (diesel_total * 1.617) / 1000
         diesel_map = generate_map(diesel_coords, [], [], (f"{start_city.strip()}, {start_state.strip()}", f"{end_city.strip()}, {end_state.strip()}"))
         ev_possible = build_ev_path(start, end)
@@ -114,7 +114,7 @@ def result():
                 routed_coords.extend(leg_coords)
                 total_ev_miles += leg_miles
             ev_total = total_ev_miles * trips
-            ev_cost = (ev_total / 20.39) * 2.208 + total_ev_miles * (10500 / ev_total) + ev_total * (250000 / 750000)
+            ev_cost = (ev_total / 20.39) * 2.208 + total_ev_miles * (10500 / 62169) + ev_total * (250000 / 750000)
             ev_emissions = (ev_total * 0.2102) / 1000
             ev_map = generate_map(routed_coords, ev_stops[1:-1], ev_charger_coords, (f"{start_city.strip()}, {start_state.strip()}", f"{end_city.strip()}, {end_state.strip()}"))
         else:
