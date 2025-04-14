@@ -6,108 +6,83 @@
     <style>
         body {
             font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-            background-color: #f4f6f8;
-            color: #212529;
+            background-color: #f8f9fa;
             margin: 0;
-            padding: 40px;
+            padding: 0;
+            text-align: center;
         }
 
-        h1 {
-            color: #0056b3;
-            margin-bottom: 30px;
+        .banner {
+            background-color: #002f6c;
+            color: white;
+            padding: 20px 40px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .banner h1 {
+            margin: 0;
+            font-size: 28px;
+        }
+
+        .banner img {
+            height: 50px;
+        }
+
+        .container {
+            max-width: 800px;
+            margin: 60px auto;
+            padding: 40px 30px;
+            background-color: white;
+            border-radius: 10px;
+            box-shadow: 0 0 10px rgba(0,0,0,0.1);
         }
 
         .download-buttons {
-            margin-bottom: 40px;
+            margin-top: 20px;
         }
 
         .download-buttons a button {
-            background-color: #0072ce;
+            background-color: #002f6c;
             color: white;
+            padding: 12px 30px;
             border: none;
-            padding: 12px 24px;
             font-size: 16px;
             cursor: pointer;
             border-radius: 6px;
-            margin-right: 20px;
+            margin: 10px;
         }
 
-        .form-section {
-            background-color: white;
-            padding: 30px;
-            border-radius: 8px;
-            box-shadow: 0 0 10px rgba(0, 0, 0, 0.05);
-            max-width: 600px;
+        .footer {
+            margin-top: 60px;
+            padding: 20px 40px;
+            display: flex;
+            justify-content: flex-start;
         }
 
-        .form-section h3 {
-            color: #0056b3;
-            margin-bottom: 15px;
-        }
-
-        .form-section label {
-            font-weight: bold;
-            margin-top: 15px;
-            display: block;
-        }
-
-        .form-section input[type="file"],
-        .form-section input[type="number"] {
-            width: 100%;
-            margin-top: 8px;
-            margin-bottom: 20px;
-            padding: 10px;
-            font-size: 15px;
-            border: 1px solid #ccc;
-            border-radius: 4px;
-        }
-
-        .form-section button {
-            background-color: #28a745;
-            color: white;
-            border: none;
-            padding: 12px 24px;
-            font-size: 16px;
-            cursor: pointer;
-            border-radius: 6px;
-        }
-
-        .form-section button:hover {
-            background-color: #218838;
-        }
-
-        p {
-            font-size: 15px;
-            line-height: 1.6;
+        .footer img {
+            height: 45px;
         }
     </style>
 </head>
 <body>
 
-    <h1>Batch Results</h1>
-
-    <div class="download-buttons">
-        <a href="{{ excel_download }}"><button>Download fullbatchresult.xlsx</button></a>
-        <a href="{{ txt_download }}"><button>Download formulas.txt</button></a>
+    <div class="banner">
+        <h1>Batch Results</h1>
+        <img src="/static/echo_logo.png" alt="Echo Logo">
     </div>
 
-    <div class="form-section">
-        <h3>Optimize EV Adoption</h3>
-        <p>
-            Upload your completed <strong>fullbatchresult.xlsx</strong> file and enter the
-            percentage of EV-eligible routes you'd like to convert. We'll highlight the most cost-effective
-            eligible routes in yellow and return a new file ready for download.
-        </p>
+    <div class="container">
+        <p>Your batch route processing is complete. You can download your files below.</p>
+        <div class="download-buttons">
+            <a href="{{ excel_download }}"><button>Download fullbatchresult.xlsx</button></a>
+            <a href="{{ txt_download }}"><button>Download formulas.txt</button></a>
+        </div>
+    </div>
 
-        <form action="/optimize-ev-adoption" method="post" enctype="multipart/form-data" target="_blank">
-            <label for="excel">Upload fullbatchresult.xlsx:</label>
-            <input type="file" name="excel" accept=".xlsx" required>
-
-            <label for="percentage">Percentage of EV-eligible routes to convert:</label>
-            <input type="number" name="percentage" min="1" max="100" required>
-
-            <button type="submit">Optimize EV Adoption</button>
-        </form>
+    <div class="footer">
+        <img src="/static/uiuc_logo.png" alt="Illinois Logo">
     </div>
 
 </body>
