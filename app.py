@@ -17,6 +17,10 @@ geolocator = GoogleV3(api_key=google_api_key, timeout=10)
 def index():
     return render_template("index.html")
 
+@app.route("/instructions")
+def instructions():
+    return render_template("instructions.html")
+
 # Load EV chargers
 ev_chargers = pd.concat([
     pd.read_excel(f"static/{f}.xlsx") for f in [1, 2, 3, 4, 5, 6, 7]
