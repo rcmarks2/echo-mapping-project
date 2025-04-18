@@ -11,10 +11,11 @@ import polyline
 
 app = Flask(__name__, template_folder="templates", static_folder="static")
 
-google_api_key = "YOUR_GOOGLE_API_KEY"
+# 🔐 Your actual API key
+google_api_key = "AIzaSyCIPvsZMeb_NtkuElOooPCE46fB-bJEULg"
 geolocator = GoogleV3(api_key=google_api_key, timeout=10)
 
-# ✅ New caches for faster processing
+# ✅ Cache setup
 geocode_cache = {}
 route_cache = {}
 
@@ -26,7 +27,7 @@ def index():
 def instructions():
     return render_template("instructions.html")
 
-# Load EV chargers
+# 📁 Load EV chargers from Excel files 1-7
 ev_chargers = pd.concat([
     pd.read_excel(f"static/{f}.xlsx") for f in [1, 2, 3, 4, 5, 6, 7]
 ])
@@ -172,6 +173,7 @@ def result():
         )
     except Exception as e:
         return f"<h3>Error in single route: {e}</h3>"
+
 @app.route("/batch-result", methods=["POST"])
 def batch_result():
     try:
@@ -191,11 +193,9 @@ def batch_result():
                 trips = max(int(row.get("Annual Trips (Minimum 1)", 1)), 1)
                 mpg = float(row.get("MPG (Optional Will Default to 9)", 9) or 9)
 
-                # Use cached geocoding
                 start = geocode_city_state(start_city, start_state)
                 end = geocode_city_state(dest_city, dest_state)
 
-                # Use cached routing
                 route_key = f"{start_city.lower()},{start_state.lower()}->{dest_city.lower()},{dest_state.lower()}"
                 if route_key in route_cache:
                     diesel_miles = route_cache[route_key]
@@ -203,7 +203,6 @@ def batch_result():
                     _, diesel_miles = get_routed_segment(start, end, return_distance=True)
                     route_cache[route_key] = diesel_miles
 
-                # Skip EV logic if geodesic is too long
                 if geodesic(start, end).miles > 1125:
                     ev_possible = "No"
                     ev_miles = "N/A"
@@ -237,7 +236,6 @@ def batch_result():
                     ev_possible = "No"
                     ev_miles = "N/A"
 
-                # Write output
                 ws.cell(row=i + 3, column=1).value = start_city
                 ws.cell(row=i + 3, column=2).value = start_state
                 ws.cell(row=i + 3, column=3).value = dest_city
@@ -246,11 +244,9 @@ def batch_result():
                 ws.cell(row=i + 3, column=6).value = trips
                 ws.cell(row=i + 3, column=7).value = ev_possible
                 ws.cell(row=i + 3, column=8).value = ev_miles
-
             except Exception as err:
                 ws.cell(row=i + 3, column=1).value = f"Error: {str(err)}"
 
-        # Process rows in parallel
         with ThreadPoolExecutor(max_workers=20) as executor:
             for i in range(len(df)):
                 executor.submit(process_row, i, df.iloc[i])
