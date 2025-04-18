@@ -11,8 +11,12 @@ import polyline
 
 app = Flask(__name__, template_folder="templates", static_folder="static")
 
-google_api_key = "AIzaSyCIPvsZMeb_NtkuElOooPCE46fB-bJEULg"
+google_api_key = "YOUR_GOOGLE_API_KEY"
 geolocator = GoogleV3(api_key=google_api_key, timeout=10)
+
+# ✅ New caches for faster processing
+geocode_cache = {}
+route_cache = {}
 
 @app.route("/")
 def index():
@@ -30,10 +34,15 @@ ev_chargers = ev_chargers.dropna(subset=["Latitude", "Longitude"])
 ev_charger_coords = [(row["Latitude"], row["Longitude"]) for _, row in ev_chargers.iterrows()]
 
 def geocode_city_state(city, state):
-    location = geolocator.geocode(f"{city}, {state}")
+    key = f"{city.strip().lower()},{state.strip().lower()}"
+    if key in geocode_cache:
+        return geocode_cache[key]
+    location = geolocator.geocode(key)
     if not location:
         raise ValueError(f"Could not geocode {city}, {state}")
-    return (location.latitude, location.longitude)
+    coords = (location.latitude, location.longitude)
+    geocode_cache[key] = coords
+    return coords
 
 def get_routed_segment(start, end, return_distance=False):
     url = "https://routes.googleapis.com/directions/v2:computeRoutes"
@@ -98,11 +107,9 @@ def result():
         end = geocode_city_state(end_city.strip(), end_state.strip())
         diesel_coords, diesel_miles = get_routed_segment(start, end, return_distance=True)
         diesel_total = diesel_miles * trips
-
         hourly_rate = 75000 / 52 / 6 / 8
         diesel_hours = diesel_miles / 50
         diesel_labor_cost = hourly_rate * diesel_hours
-
         diesel_cost = (
             trips * (diesel_miles / mpg) * 3.59 +
             diesel_miles * (17500 / 62169) +
@@ -134,10 +141,8 @@ def result():
                 leg_coords, leg_miles = get_routed_segment(ev_stops[i], ev_stops[i + 1], return_distance=True)
                 routed_coords.extend(leg_coords)
                 total_ev_miles += leg_miles
-
             ev_hours = total_ev_miles / 50
             ev_labor_cost = hourly_rate * ev_hours
-
             ev_total = total_ev_miles * trips
             ev_cost = (
                 (ev_total / 20.39) * 2.208 +
@@ -167,7 +172,6 @@ def result():
         )
     except Exception as e:
         return f"<h3>Error in single route: {e}</h3>"
-
 @app.route("/batch-result", methods=["POST"])
 def batch_result():
     try:
@@ -187,11 +191,23 @@ def batch_result():
                 trips = max(int(row.get("Annual Trips (Minimum 1)", 1)), 1)
                 mpg = float(row.get("MPG (Optional Will Default to 9)", 9) or 9)
 
+                # Use cached geocoding
                 start = geocode_city_state(start_city, start_state)
                 end = geocode_city_state(dest_city, dest_state)
-                _, diesel_miles = get_routed_segment(start, end, return_distance=True)
 
-                if build_ev_path(start, end):
+                # Use cached routing
+                route_key = f"{start_city.lower()},{start_state.lower()}->{dest_city.lower()},{dest_state.lower()}"
+                if route_key in route_cache:
+                    diesel_miles = route_cache[route_key]
+                else:
+                    _, diesel_miles = get_routed_segment(start, end, return_distance=True)
+                    route_cache[route_key] = diesel_miles
+
+                # Skip EV logic if geodesic is too long
+                if geodesic(start, end).miles > 1125:
+                    ev_possible = "No"
+                    ev_miles = "N/A"
+                elif build_ev_path(start, end):
                     ev_stops = [start]
                     current = start
                     feasible = True
@@ -221,6 +237,7 @@ def batch_result():
                     ev_possible = "No"
                     ev_miles = "N/A"
 
+                # Write output
                 ws.cell(row=i + 3, column=1).value = start_city
                 ws.cell(row=i + 3, column=2).value = start_state
                 ws.cell(row=i + 3, column=3).value = dest_city
@@ -229,9 +246,11 @@ def batch_result():
                 ws.cell(row=i + 3, column=6).value = trips
                 ws.cell(row=i + 3, column=7).value = ev_possible
                 ws.cell(row=i + 3, column=8).value = ev_miles
+
             except Exception as err:
                 ws.cell(row=i + 3, column=1).value = f"Error: {str(err)}"
 
+        # Process rows in parallel
         with ThreadPoolExecutor(max_workers=20) as executor:
             for i in range(len(df)):
                 executor.submit(process_row, i, df.iloc[i])
