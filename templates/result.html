@@ -30,11 +30,11 @@
             display: flex;
             justify-content: space-between;
             gap: 2%;
-            flex-wrap: wrap;
+            flex-wrap: nowrap;
         }
 
         .map-card {
-            flex: 0 0 48%;
+            flex: 0 0 49%;
             background-color: #ffffff;
             border: 2px solid #ccc;
             border-radius: 10px;
@@ -49,17 +49,23 @@
             color: #002f6c;
         }
 
-        /* ⚠️ FORCE Leaflet maps to fit */
-        .map-container iframe, 
-        .map-container > div {
-            width: 100% !important;
-            height: 450px !important;
-        }
-
         .map-container {
             width: 100%;
             height: 450px;
             margin-bottom: 20px;
+        }
+
+        /* Force Folium maps to not override layout */
+        .map-container div {
+            width: 100% !important;
+            height: 100% !important;
+            margin: 0 auto;
+        }
+
+        iframe {
+            width: 100% !important;
+            height: 100% !important;
+            border: none;
         }
 
         .data-block p {
@@ -81,7 +87,12 @@
             cursor: pointer;
         }
 
-        @media (max-width: 900px) {
+        @media (max-width: 1024px) {
+            .map-section {
+                flex-direction: column;
+                align-items: center;
+            }
+
             .map-card {
                 flex: 0 0 100%;
                 margin-bottom: 30px;
@@ -96,7 +107,7 @@
 
         <div class="map-section">
 
-            <!-- Diesel Route Card -->
+            <!-- Diesel Route -->
             <div class="map-card">
                 <div class="map-title">Diesel Route</div>
                 <div class="map-container">
@@ -111,7 +122,7 @@
                 </div>
             </div>
 
-            <!-- EV Route Card -->
+            <!-- EV Route -->
             <div class="map-card">
                 <div class="map-title">EV Route</div>
                 {% if not ev_unavailable %}
@@ -136,7 +147,7 @@
         <div class="return-button">
             <a href="/"><button>Return to Homepage</button></a>
         </div>
-    </div>
 
+    </div>
 </body>
 </html>
