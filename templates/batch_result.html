@@ -54,6 +54,20 @@
             margin: 10px;
         }
 
+        .return-button {
+            margin-top: 40px;
+        }
+
+        .return-button a button {
+            background-color: #002f6c;
+            color: white;
+            padding: 12px 24px;
+            font-size: 16px;
+            border: none;
+            border-radius: 6px;
+            cursor: pointer;
+        }
+
         .footer {
             margin-top: 60px;
             padding: 20px 40px;
@@ -75,9 +89,15 @@
 
     <div class="container">
         <p>Your batch route processing is complete. You can download your files below.</p>
+
         <div class="download-buttons">
             <a href="{{ excel_download }}"><button>Download fullbatchresult.xlsx</button></a>
             <a href="{{ txt_download }}"><button>Download formulas.txt</button></a>
+        </div>
+
+        <!-- ✅ Return to Homepage Button (now inside container!) -->
+        <div class="return-button">
+            <a href="/"><button>Return to Homepage</button></a>
         </div>
     </div>
 

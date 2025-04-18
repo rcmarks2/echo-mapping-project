@@ -1,151 +1,133 @@
 <!DOCTYPE html>
-<html>
+<html lang="en">
 <head>
-    <title>Echo Global Logistics Route Tool</title>
+    <meta charset="UTF-8">
+    <title>Single Route Result</title>
     <style>
         body {
             font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-            background-color: #f5f7fa;
+            background-color: #f8f9fa;
+            text-align: center;
             margin: 0;
             padding: 0;
         }
-        header {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            padding: 10px 30px;
-            background-color: #ffffff;
-            border-bottom: 2px solid #e2e8f0;
-        }
-        header img.logo-right {
-            height: 50px;
-        }
-        header img.logo-left {
-            height: 40px;
-        }
+
         .container {
-            max-width: 1000px;
-            margin: 50px auto;
-            background-color: #ffffff;
-            padding: 40px;
-            border-radius: 12px;
-            box-shadow: 0 4px 12px rgba(0,0,0,0.08);
+            max-width: 1100px;
+            margin: 40px auto;
+            padding: 20px;
+            background-color: white;
+            border-radius: 10px;
+            box-shadow: 0 0 10px rgba(0,0,0,0.05);
         }
+
         h1 {
-            text-align: center;
-            color: #003366;
+            color: #002f6c;
         }
-        h2 {
-            color: #003366;
-            margin-top: 40px;
-            text-align: center;
-        }
-        form {
+
+        .map-section {
             display: flex;
-            flex-direction: column;
-            gap: 20px;
-            font-size: 18px;
+            flex-wrap: wrap;
+            justify-content: space-between;
+            margin-top: 40px;
         }
-        label {
-            font-weight: bold;
-            margin-bottom: 5px;
-        }
-        input[type="text"],
-        input[type="number"],
-        input[type="file"] {
-            padding: 10px;
-            font-size: 16px;
+
+        .map-card {
+            flex: 0 0 48%;
+            background-color: #ffffff;
             border: 1px solid #ccc;
-            border-radius: 6px;
+            border-radius: 10px;
+            padding: 20px;
+            margin-bottom: 30px;
+            box-shadow: 2px 2px 10px rgba(0,0,0,0.05);
         }
+
+        .map-title {
+            font-size: 20px;
+            margin-bottom: 10px;
+            color: #002f6c;
+        }
+
+        .map-container {
+            width: 100%;
+            height: auto;
+            margin-bottom: 15px;
+        }
+
+        .data-block p {
+            margin: 5px 0;
+            font-size: 15px;
+        }
+
+        .button-container {
+            margin-top: 40px;
+        }
+
         button {
-            padding: 14px;
-            font-size: 18px;
-            background-color: #003366;
+            background-color: #002f6c;
             color: white;
+            padding: 12px 24px;
+            font-size: 16px;
             border: none;
             border-radius: 6px;
             cursor: pointer;
         }
-        button:hover {
-            background-color: #0053a4;
-        }
-        .instructions-link {
-            text-align: center;
-            margin: 30px 40px 0;
-        }
-        .instructions-link p {
-            font-size: 20px;
-            color: #1f2937;
-        }
-        .instructions-link a {
-            padding: 12px 24px;
-            background-color: #003366;
-            color: white;
-            text-decoration: none;
-            border-radius: 6px;
-            font-size: 18px;
-            display: inline-block;
-            margin-top: 10px;
-        }
-        .download-template {
-            text-align: center;
-            margin-top: 10px;
-        }
-        .download-template a {
-            color: #003366;
-            font-weight: bold;
-            text-decoration: none;
+
+        @media (max-width: 900px) {
+            .map-card {
+                flex: 0 0 100%;
+            }
         }
     </style>
 </head>
 <body>
-    <header>
-        <img src="/static/uiuc_logo.png" alt="Illinois Logo" class="logo-left">
-        <img src="/static/echo_logo.png" alt="Echo Logo" class="logo-right">
-    </header>
-
-    <div class="instructions-link">
-        <p>First time? Click below for instructions on how to use our tool.</p>
-        <a href="/instructions">View Instructions</a>
-    </div>
 
     <div class="container">
-        <h1>Compare Diesel vs EV Routes</h1>
+        <h1>Single Route Analysis</h1>
 
-        <form action="/result" method="post">
-            <div>
-                <label for="start">Start Location (City, State)</label>
-                <input type="text" id="start" name="start" placeholder="e.g., Chicago, IL" required>
-            </div>
-            <div>
-                <label for="end">End Location (City, State)</label>
-                <input type="text" id="end" name="end" placeholder="e.g., Atlanta, GA" required>
-            </div>
-            <div>
-                <label for="mpg">Diesel Truck MPG (optional)</label>
-                <input type="number" id="mpg" name="mpg" step="0.1" placeholder="Defaults to 9">
-            </div>
-            <div>
-                <label for="annual_trips">Annual Trips</label>
-                <input type="number" id="annual_trips" name="annual_trips" min="1" required>
-            </div>
-            <button type="submit">Generate Comparison</button>
-        </form>
+        <div class="map-section">
 
-        <h2>Batch Route Upload</h2>
-
-        <form action="/batch-result" method="post" enctype="multipart/form-data">
-            <div>
-                <label for="excel">Upload Excel File</label>
-                <input type="file" id="excel" name="excel" accept=".xlsx" required>
+            <!-- Diesel Card -->
+            <div class="map-card">
+                <div class="map-title">Diesel Route</div>
+                <div class="map-container">
+                    {{ diesel_map | safe }}
+                </div>
+                <div class="data-block">
+                    <p><strong>One-Way Distance:</strong> {{ diesel_miles }} miles</p>
+                    <p><strong>Annual Trips:</strong> {{ annual_trips }}</p>
+                    <p><strong>Annual Distance:</strong> {{ diesel_annual_miles }} miles</p>
+                    <p><strong>Total Annual Cost:</strong> ${{ diesel_total_cost }}</p>
+                    <p><strong>Total CO₂ Emissions:</strong> {{ diesel_emissions }} metric tons</p>
+                </div>
             </div>
-            <button type="submit">Upload and Process Routes</button>
-        </form>
 
-        <div class="download-template">
-            <p>Need a template? <a href="/static/batch_template.xlsx" download>Download here</a></p>
+            <!-- EV Card -->
+            <div class="map-card">
+                <div class="map-title">EV Route</div>
+                {% if not ev_unavailable %}
+                    <div class="map-container">
+                        {{ ev_map | safe }}
+                    </div>
+                    <div class="data-block">
+                        <p><strong>One-Way Distance:</strong> {{ ev_miles }} miles</p>
+                        <p><strong>Annual Distance:</strong> {{ ev_annual_miles }} miles</p>
+                        <p><strong>Total Annual Cost:</strong> ${{ ev_total_cost }}</p>
+                        <p><strong>Total CO₂ Emissions:</strong> {{ ev_emissions }} metric tons</p>
+                    </div>
+                {% else %}
+                    <div class="data-block">
+                        <p style="color: red;"><strong>EV route not possible for this lane.</strong></p>
+                    </div>
+                {% endif %}
+            </div>
+        </div>
+
+        <!-- ✅ Return to Homepage Button -->
+        <div class="button-container">
+            <a href="/"><button>Return to Homepage</button></a>
         </div>
     </div>
+
 </body>
 </html>
