@@ -167,6 +167,7 @@ def result():
         )
     except Exception as e:
         return f"<h3>Error in single route: {e}</h3>"
+
 @app.route("/batch-result", methods=["POST"])
 def batch_result():
     try:
