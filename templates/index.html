@@ -30,9 +30,9 @@
         }
 
         .container {
-            max-width: 800px;
+            max-width: 900px;
             margin: 40px auto;
-            padding: 40px 30px;
+            padding: 20px;
             background-color: white;
             border-radius: 10px;
             box-shadow: 0 0 10px rgba(0,0,0,0.1);
@@ -78,8 +78,11 @@
             height: 45px;
         }
 
-        .section {
-            margin-bottom: 50px;
+        .section-box {
+            border: 2px solid #d3d3d3;
+            border-radius: 10px;
+            padding: 30px;
+            margin-bottom: 40px;
         }
 
         .download-button {
@@ -100,6 +103,11 @@
         a:hover {
             text-decoration: underline;
         }
+
+        .top-link {
+            margin-top: 20px;
+            margin-bottom: 30px;
+        }
     </style>
 </head>
 <body>
@@ -111,35 +119,35 @@
 
     <div class="container">
 
-        <!-- Single Route Form -->
-        <div class="section">
-            <h2>Compare a Single Route</h2>
-            <form method="POST" action="/result">
-                <input type="text" name="start" placeholder="Start City, State (e.g. Chicago, IL)" required><br>
-                <input type="text" name="end" placeholder="End City, State (e.g. Atlanta, GA)" required><br>
-                <input type="number" name="mpg" step="0.1" placeholder="Diesel MPG (optional, default is 9)"><br>
-                <input type="number" name="annual_trips" placeholder="Annual Trips (e.g. 150)" required><br>
-                <button type="submit">Compare</button>
-            </form>
-        </div>
-
-        <!-- Batch Upload Form -->
-        <div class="section">
-            <h2>Upload Multiple Routes</h2>
-            <form method="POST" action="/batch-result" enctype="multipart/form-data">
-                <input type="file" name="excel" accept=".xlsx" required><br>
-                <button type="submit">Upload & Process</button>
-            </form>
-            <div class="download-button">
-                <p class="small-note">Need a template?</p>
-                <a href="/static/batch_template.xlsx" download>
-                    <button>Download Template</button>
-                </a>
-            </div>
-        </div>
-
-        <div>
+        <!-- 🔝 Instructions link at top -->
+        <div class="top-link">
             <a href="/instructions">📘 View Instructions</a>
+        </div>
+
+        <!-- ✅ Single Route Form (outlined) -->
+        <div class="section-box">
+            <h2>Compare Diesel vs EV Routes</h2>
+            <form method="POST" action="/result">
+                <input type="text" name="start" placeholder="Start Location (City, State)" required><br>
+                <input type="text" name="end" placeholder="End Location (City, State)" required><br>
+                <input type="number" name="mpg" step="0.1" placeholder="Diesel Truck MPG (optional)"><br>
+                <input type="number" name="annual_trips" placeholder="Annual Trips" required><br>
+                <button type="submit">Generate Comparison</button>
+            </form>
+        </div>
+
+        <!-- ✅ Batch Upload Section (outlined) -->
+        <div class="section-box">
+            <h2>Batch Route Upload</h2>
+            <form method="POST" action="/batch-result" enctype="multipart/form-data">
+                <label><strong>Upload Excel File</strong></label><br>
+                <input type="file" name="excel" accept=".xlsx" required><br>
+                <button type="submit">Upload and Process Routes</button>
+            </form>
+
+            <div class="download-button">
+                <p class="small-note">Need a template? <a href="/static/batch_template.xlsx" download>Download here</a></p>
+            </div>
         </div>
 
     </div>
