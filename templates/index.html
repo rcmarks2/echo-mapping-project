@@ -2,65 +2,58 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <title>Single Route Result</title>
+    <title>EV vs Diesel Truck Route Comparison</title>
     <style>
         body {
             font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            margin: 0;
             background-color: #f8f9fa;
             text-align: center;
+        }
+
+        .banner {
+            background-color: #002f6c;
+            color: white;
+            padding: 20px 40px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .banner h1 {
             margin: 0;
-            padding: 0;
+            font-size: 28px;
+        }
+
+        .banner img {
+            height: 50px;
         }
 
         .container {
-            max-width: 1100px;
+            max-width: 800px;
             margin: 40px auto;
-            padding: 20px;
+            padding: 40px 30px;
             background-color: white;
             border-radius: 10px;
-            box-shadow: 0 0 10px rgba(0,0,0,0.05);
+            box-shadow: 0 0 10px rgba(0,0,0,0.1);
         }
 
-        h1 {
+        h2 {
             color: #002f6c;
-        }
-
-        .map-section {
-            display: flex;
-            flex-wrap: wrap;
-            justify-content: space-between;
-            margin-top: 40px;
-        }
-
-        .map-card {
-            flex: 0 0 48%;
-            background-color: #ffffff;
-            border: 1px solid #ccc;
-            border-radius: 10px;
-            padding: 20px;
-            margin-bottom: 30px;
-            box-shadow: 2px 2px 10px rgba(0,0,0,0.05);
-        }
-
-        .map-title {
-            font-size: 20px;
             margin-bottom: 10px;
-            color: #002f6c;
         }
 
-        .map-container {
-            width: 100%;
-            height: auto;
-            margin-bottom: 15px;
+        form {
+            margin-top: 20px;
         }
 
-        .data-block p {
-            margin: 5px 0;
-            font-size: 15px;
-        }
-
-        .button-container {
-            margin-top: 40px;
+        input, select {
+            padding: 10px;
+            width: 80%;
+            margin: 10px 0;
+            font-size: 16px;
+            border: 1px solid #ccc;
+            border-radius: 5px;
         }
 
         button {
@@ -71,62 +64,88 @@
             border: none;
             border-radius: 6px;
             cursor: pointer;
+            margin-top: 10px;
         }
 
-        @media (max-width: 900px) {
-            .map-card {
-                flex: 0 0 100%;
-            }
+        .footer {
+            margin-top: 60px;
+            padding: 20px 40px;
+            display: flex;
+            justify-content: flex-start;
+        }
+
+        .footer img {
+            height: 45px;
+        }
+
+        .section {
+            margin-bottom: 50px;
+        }
+
+        .download-button {
+            margin-top: 10px;
+        }
+
+        .small-note {
+            font-size: 14px;
+            color: #666;
+        }
+
+        a {
+            color: #002f6c;
+            text-decoration: none;
+            font-weight: bold;
+        }
+
+        a:hover {
+            text-decoration: underline;
         }
     </style>
 </head>
 <body>
 
+    <div class="banner">
+        <h1>EV vs Diesel Route Comparison</h1>
+        <img src="/static/echo_logo.png" alt="Echo Logo">
+    </div>
+
     <div class="container">
-        <h1>Single Route Analysis</h1>
 
-        <div class="map-section">
+        <!-- Single Route Form -->
+        <div class="section">
+            <h2>Compare a Single Route</h2>
+            <form method="POST" action="/result">
+                <input type="text" name="start" placeholder="Start City, State (e.g. Chicago, IL)" required><br>
+                <input type="text" name="end" placeholder="End City, State (e.g. Atlanta, GA)" required><br>
+                <input type="number" name="mpg" step="0.1" placeholder="Diesel MPG (optional, default is 9)"><br>
+                <input type="number" name="annual_trips" placeholder="Annual Trips (e.g. 150)" required><br>
+                <button type="submit">Compare</button>
+            </form>
+        </div>
 
-            <!-- Diesel Card -->
-            <div class="map-card">
-                <div class="map-title">Diesel Route</div>
-                <div class="map-container">
-                    {{ diesel_map | safe }}
-                </div>
-                <div class="data-block">
-                    <p><strong>One-Way Distance:</strong> {{ diesel_miles }} miles</p>
-                    <p><strong>Annual Trips:</strong> {{ annual_trips }}</p>
-                    <p><strong>Annual Distance:</strong> {{ diesel_annual_miles }} miles</p>
-                    <p><strong>Total Annual Cost:</strong> ${{ diesel_total_cost }}</p>
-                    <p><strong>Total CO₂ Emissions:</strong> {{ diesel_emissions }} metric tons</p>
-                </div>
-            </div>
-
-            <!-- EV Card -->
-            <div class="map-card">
-                <div class="map-title">EV Route</div>
-                {% if not ev_unavailable %}
-                    <div class="map-container">
-                        {{ ev_map | safe }}
-                    </div>
-                    <div class="data-block">
-                        <p><strong>One-Way Distance:</strong> {{ ev_miles }} miles</p>
-                        <p><strong>Annual Distance:</strong> {{ ev_annual_miles }} miles</p>
-                        <p><strong>Total Annual Cost:</strong> ${{ ev_total_cost }}</p>
-                        <p><strong>Total CO₂ Emissions:</strong> {{ ev_emissions }} metric tons</p>
-                    </div>
-                {% else %}
-                    <div class="data-block">
-                        <p style="color: red;"><strong>EV route not possible for this lane.</strong></p>
-                    </div>
-                {% endif %}
+        <!-- Batch Upload Form -->
+        <div class="section">
+            <h2>Upload Multiple Routes</h2>
+            <form method="POST" action="/batch-result" enctype="multipart/form-data">
+                <input type="file" name="excel" accept=".xlsx" required><br>
+                <button type="submit">Upload & Process</button>
+            </form>
+            <div class="download-button">
+                <p class="small-note">Need a template?</p>
+                <a href="/static/batch_template.xlsx" download>
+                    <button>Download Template</button>
+                </a>
             </div>
         </div>
 
-        <!-- ✅ Return to Homepage Button -->
-        <div class="button-container">
-            <a href="/"><button>Return to Homepage</button></a>
+        <div>
+            <a href="/instructions">📘 View Instructions</a>
         </div>
+
+    </div>
+
+    <div class="footer">
+        <img src="/static/uiuc_logo.png" alt="Illinois Logo">
     </div>
 
 </body>
