@@ -6,45 +6,37 @@ DIESEL TRUCK FORMULAS
    = (Annual Trips) × (Miles per Trip ÷ MPG) × $3.59 (Average US Diesel Price)
 
 2. Maintenance Cost:
-   = (One Trip Miles) × [17,500 (Average Yearly Truck Maintenance Cost) ÷ 62,169 (Average Number Miles a Truck Covers in a Year)]
+   = Miles per Trip × (17,500 ÷ Annual Mileage)
 
 3. Depreciation Cost:
-   = (One Trip Miles) × [$166,000 (Average Truck Purchase Cost) ÷ 750,000 (Average Lifetime Miles for a Truck)]
+   = Total Annual Miles × (166,000 ÷ 750,000)
 
 4. Labor Cost:
-   = (Miles per Trip ÷ 50 mph) × [75,000 ÷ 52 weeks ÷ 6 days ÷ 8 hours] × Annual Trips
+   = (Miles per Trip ÷ 50 mph) × (Hourly Rate based on $75,000 annual salary)
 
-   - Labor is based on an average truck speed of 50 mph.
-   - Hourly rate is calculated from a $75,000/year salary over 52 weeks, 6 working days per week, and 8 hours per day.
-   - Resulting hourly rate = $30.04/hour.
+5. Total Annual Cost:
+   = Fuel + Maintenance + Depreciation + Labor
 
-4. Total Annual Cost:
-   = Fuel Cost + Maintenance Cost + Depreciation Cost + Labor Cost
-
-5. Annual CO₂ Emissions:
-   = Annual Mileage × 1.617 (kg CO₂/mile) → divide by 1000 to get metric tons
+6. CO₂ Emissions:
+   = Total Annual Miles × 1.617 kg/mile → Convert to metric tons (÷ 1000)
 
 
 ELECTRIC TRUCK FORMULAS
 
 1. Fuel Cost:
-   = (Annual Trips) × (Miles per Trip ÷ MPG) × $3.59 (Average US Diesel Price)
+   = (Total Trip Miles ÷ 20.39) × $2.208 (Converted Battery Charge Price)
 
 2. Maintenance Cost:
-   = (One Trip Miles) × [10,500 (Average Yearly Truck Maintenance Cost) ÷ 62,169 (Average Number Miles a Truck Covers in a Year)]
+   = Miles per Trip × (10,500 ÷ Annual Mileage)
 
 3. Depreciation Cost:
-   = (One Trip Miles) × [$250,000 (Average Truck Purchase Cost) ÷ 750,000 (Average Lifetime Miles for a Truck)]
+   = Total Annual Miles × (250,000 ÷ 750,000)
 
 4. Labor Cost:
-   = (Miles per Trip ÷ 50 mph) × [75,000 ÷ 52 weeks ÷ 6 days ÷ 8 hours] × Annual Trips
+   = (Miles per Trip ÷ 50 mph) × (Hourly Rate based on $75,000 annual salary)
 
-   - Labor is based on an average truck speed of 50 mph.
-   - Hourly rate is calculated from a $75,000/year salary over 52 weeks, 6 working days per week, and 8 hours per day.
-   - Resulting hourly rate = $30.04/hour.
+5. Total Annual Cost:
+   = Fuel + Maintenance + Depreciation + Labor
 
-4. Total Annual Cost:
-   = Charge Cost + Maintenance Cost + Depreciation Cost + Labor Cost
-
-5. Annual CO₂ Emissions:
-   = Annual Mileage × 0.2102 (kg CO₂/mile) → divide by 1000 to get metric tons
+6. CO₂ Emissions:
+   = Total Annual Miles × 0.2102 kg/mile → Convert to metric tons (÷ 1000)
