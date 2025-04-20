@@ -5,24 +5,57 @@
     <title>Single Route Results</title>
     <link rel="stylesheet" href="/static/style.css">
     <style>
+        body {
+            font-family: Arial, sans-serif;
+            background-color: #f5f7fa;
+            margin: 0;
+            padding: 0;
+        }
+
+        .top-banner {
+            background-color: #003865;
+            color: white;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 8px 20px;
+        }
+
+        .top-banner .left {
+            font-size: 14px;
+        }
+
+        .top-banner .right img {
+            height: 35px;
+        }
+
+        .content {
+            padding: 40px 20px 60px;
+            text-align: center;
+        }
+
+        h1 {
+            color: #003865;
+            margin-bottom: 40px;
+        }
+
         .route-section {
             display: flex;
             justify-content: center;
             gap: 40px;
             flex-wrap: wrap;
-            padding: 20px;
         }
 
         .map-box {
+            background-color: white;
             border: 2px solid #ccc;
             border-radius: 10px;
-            padding: 15px;
-            width: 500px;
-            background-color: white;
+            padding: 15px 20px;
+            width: 520px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.1);
         }
 
         .map-box h3 {
-            text-align: center;
             color: #003865;
             margin-bottom: 10px;
         }
@@ -33,9 +66,13 @@
         }
 
         .metrics {
-            font-family: Arial, sans-serif;
+            text-align: left;
             font-size: 15px;
             color: #000;
+        }
+
+        .metrics p {
+            margin: 4px 0;
         }
 
         .metrics b {
@@ -43,71 +80,91 @@
         }
 
         .return-button {
-            display: flex;
-            justify-content: center;
-            margin: 30px 0;
+            margin-top: 40px;
         }
 
         .return-button a {
             background-color: #003865;
             color: white;
-            padding: 10px 20px;
+            padding: 10px 25px;
             text-decoration: none;
             border-radius: 6px;
+            font-size: 15px;
         }
 
         .return-button a:hover {
             background-color: #00509e;
         }
 
-        h1 {
-            text-align: center;
-            color: #003865;
-            margin-top: 30px;
+        .footer-logo {
+            position: absolute;
+            bottom: 10px;
+            left: 10px;
+        }
+
+        .footer-logo img {
+            height: 50px;
         }
     </style>
 </head>
 <body>
-    <h1>Single Route Analysis</h1>
 
-    <div class="route-section">
-        <div class="map-box">
-            <h3>Diesel Route</h3>
-            <div class="map">{{ diesel_map|safe }}</div>
-            <div class="metrics">
-                <p><b>One-Way Distance:</b> {{ diesel_miles }} miles</p>
-                <p><b>Annual Trips:</b> {{ annual_trips }}</p>
-                <p><b>Annual Distance:</b> {{ diesel_annual_miles }} miles</p>
-                <p><b>Total Annual Cost:</b> ${{ diesel_total_cost }}</p>
-                <p><b>Total CO₂ Emissions:</b> {{ diesel_emissions }} metric tons</p>
-            </div>
+    <div class="top-banner">
+        <div class="left">
+            English &nbsp;|&nbsp; 800.354.7993 &nbsp;|&nbsp; info@echo.com &nbsp;|&nbsp; <a href="#" style="color:white;">Contact Us</a>
         </div>
+        <div class="right">
+            <img src="/static/echo_logo.png" alt="Echo Logo">
+        </div>
+    </div>
 
-        <div class="map-box">
-            <h3>EV Route</h3>
-            <div class="map">
-                {% if ev_map %}
-                    {{ ev_map|safe }}
-                {% else %}
-                    <p><i>EV route not possible.</i></p>
-                {% endif %}
-            </div>
-            <div class="metrics">
-                {% if not ev_unavailable %}
-                    <p><b>One-Way Distance:</b> {{ ev_miles }} miles</p>
+    <div class="content">
+        <h1>Single Route Analysis</h1>
+
+        <div class="route-section">
+            <div class="map-box">
+                <h3>Diesel Route</h3>
+                <div class="map">{{ diesel_map|safe }}</div>
+                <div class="metrics">
+                    <p><b>One-Way Distance:</b> {{ diesel_miles }} miles</p>
                     <p><b>Annual Trips:</b> {{ annual_trips }}</p>
-                    <p><b>Annual Distance:</b> {{ ev_annual_miles }} miles</p>
-                    <p><b>Total Annual Cost:</b> ${{ ev_total_cost }}</p>
-                    <p><b>Total CO₂ Emissions:</b> {{ ev_emissions }} metric tons</p>
-                {% else %}
-                    <p><i>EV route not possible for this lane.</i></p>
-                {% endif %}
+                    <p><b>Annual Distance:</b> {{ diesel_annual_miles }} miles</p>
+                    <p><b>Total Annual Cost:</b> ${{ diesel_total_cost }}</p>
+                    <p><b>Total CO₂ Emissions:</b> {{ diesel_emissions }} metric tons</p>
+                </div>
             </div>
+
+            <div class="map-box">
+                <h3>EV Route</h3>
+                <div class="map">
+                    {% if ev_map %}
+                        {{ ev_map|safe }}
+                    {% else %}
+                        <p><i>EV route not possible.</i></p>
+                    {% endif %}
+                </div>
+                <div class="metrics">
+                    {% if not ev_unavailable %}
+                        <p><b>One-Way Distance:</b> {{ ev_miles }} miles</p>
+                        <p><b>Annual Trips:</b> {{ annual_trips }}</p>
+                        <p><b>Annual Distance:</b> {{ ev_annual_miles }} miles</p>
+                        <p><b>Total Annual Cost:</b> ${{ ev_total_cost }}</p>
+                        <p><b>Total CO₂ Emissions:</b> {{ ev_emissions }} metric tons</p>
+                    {% else %}
+                        <p><i>EV route not possible for this lane.</i></p>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+
+        <div class="return-button">
+            <a href="/">Return to Homepage</a>
         </div>
     </div>
 
-    <div class="return-button">
-        <a href="/">Return to Homepage</a>
+    <div class="footer-logo">
+        <img src="/static/uiuc_logo.png" alt="Illinois Logo">
     </div>
+
 </body>
 </html>
