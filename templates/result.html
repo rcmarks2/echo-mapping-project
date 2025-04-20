@@ -2,151 +2,112 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <title>Single Route Result</title>
+    <title>Single Route Results</title>
+    <link rel="stylesheet" href="/static/style.css">
     <style>
-        body {
-            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-            background-color: #f8f9fa;
-            margin: 0;
-            padding: 0;
-            text-align: center;
-        }
-
-        .container {
-            max-width: 1200px;
-            margin: 40px auto;
-            padding: 30px;
-            background-color: white;
-            border-radius: 10px;
-            box-shadow: 0 0 10px rgba(0,0,0,0.05);
-        }
-
-        h1 {
-            color: #002f6c;
-            margin-bottom: 30px;
-        }
-
-        .map-section {
+        .route-section {
             display: flex;
-            justify-content: space-between;
-            gap: 2%;
-            flex-wrap: nowrap;
+            justify-content: center;
+            gap: 40px;
+            flex-wrap: wrap;
+            padding: 20px;
         }
 
-        .map-card {
-            flex: 0 0 49%;
-            background-color: #ffffff;
+        .map-box {
             border: 2px solid #ccc;
             border-radius: 10px;
-            padding: 20px;
-            box-shadow: 2px 2px 8px rgba(0,0,0,0.05);
-            overflow: hidden;
+            padding: 15px;
+            width: 500px;
+            background-color: white;
         }
 
-        .map-title {
-            font-size: 18px;
-            font-weight: bold;
-            margin-bottom: 15px;
-            color: #002f6c;
+        .map-box h3 {
+            text-align: center;
+            color: #003865;
+            margin-bottom: 10px;
         }
 
-        .map-wrapper {
-            width: 100%;
+        .map {
             height: 400px;
-            margin-bottom: 20px;
-            overflow: hidden;
+            margin-bottom: 15px;
         }
 
-        .map-wrapper .folium-map, 
-        .map-wrapper .leaflet-container,
-        .map-wrapper iframe,
-        .map-wrapper div {
-            width: 100% !important;
-            height: 100% !important;
-            max-width: 100% !important;
-            max-height: 100% !important;
-        }
-
-        .data-block p {
-            margin: 6px 0;
+        .metrics {
+            font-family: Arial, sans-serif;
             font-size: 15px;
+            color: #000;
+        }
+
+        .metrics b {
+            font-weight: bold;
         }
 
         .return-button {
-            margin-top: 40px;
+            display: flex;
+            justify-content: center;
+            margin: 30px 0;
         }
 
-        .return-button a button {
-            background-color: #002f6c;
+        .return-button a {
+            background-color: #003865;
             color: white;
-            padding: 12px 24px;
-            font-size: 16px;
-            border: none;
+            padding: 10px 20px;
+            text-decoration: none;
             border-radius: 6px;
-            cursor: pointer;
         }
 
-        @media (max-width: 1024px) {
-            .map-section {
-                flex-direction: column;
-                align-items: center;
-            }
+        .return-button a:hover {
+            background-color: #00509e;
+        }
 
-            .map-card {
-                flex: 0 0 100%;
-                margin-bottom: 30px;
-            }
+        h1 {
+            text-align: center;
+            color: #003865;
+            margin-top: 30px;
         }
     </style>
 </head>
 <body>
+    <h1>Single Route Analysis</h1>
 
-    <div class="container">
-        <h1>Single Route Analysis</h1>
-
-        <div class="map-section">
-
-            <!-- Diesel Route -->
-            <div class="map-card">
-                <div class="map-title">Diesel Route</div>
-                <div class="map-wrapper">
-                    {{ diesel_map | safe }}
-                </div>
-                <div class="data-block">
-                    <p><strong>One-Way Distance:</strong> {{ diesel_miles }} miles</p>
-                    <p><strong>Annual Trips:</strong> {{ annual_trips }}</p>
-                    <p><strong>Annual Distance:</strong> {{ diesel_annual_miles }} miles</p>
-                    <p><strong>Total Annual Cost:</strong> ${{ diesel_total_cost }}</p>
-                    <p><strong>Total CO₂ Emissions:</strong> {{ diesel_emissions }} metric tons</p>
-                </div>
+    <div class="route-section">
+        <div class="map-box">
+            <h3>Diesel Route</h3>
+            <div class="map">{{ diesel_map|safe }}</div>
+            <div class="metrics">
+                <p><b>One-Way Distance:</b> {{ diesel_miles }} miles</p>
+                <p><b>Annual Trips:</b> {{ annual_trips }}</p>
+                <p><b>Annual Distance:</b> {{ diesel_annual_miles }} miles</p>
+                <p><b>Total Annual Cost:</b> ${{ diesel_total_cost }}</p>
+                <p><b>Total CO₂ Emissions:</b> {{ diesel_emissions }} metric tons</p>
             </div>
+        </div>
 
-            <!-- EV Route -->
-            <div class="map-card">
-                <div class="map-title">EV Route</div>
-                {% if not ev_unavailable %}
-                    <div class="map-wrapper">
-                        {{ ev_map | safe }}
-                    </div>
-                    <div class="data-block">
-                        <p><strong>One-Way Distance:</strong> {{ ev_miles }} miles</p>
-                        <p><strong>Annual Distance:</strong> {{ ev_annual_miles }} miles</p>
-                        <p><strong>Total Annual Cost:</strong> ${{ ev_total_cost }}</p>
-                        <p><strong>Total CO₂ Emissions:</strong> {{ ev_emissions }} metric tons</p>
-                    </div>
+        <div class="map-box">
+            <h3>EV Route</h3>
+            <div class="map">
+                {% if ev_map %}
+                    {{ ev_map|safe }}
                 {% else %}
-                    <div class="data-block">
-                        <p style="color: red;"><strong>EV route not possible for this lane.</strong></p>
-                    </div>
+                    <p><i>EV route not possible.</i></p>
                 {% endif %}
             </div>
-
+            <div class="metrics">
+                {% if not ev_unavailable %}
+                    <p><b>One-Way Distance:</b> {{ ev_miles }} miles</p>
+                    <p><b>Annual Trips:</b> {{ annual_trips }}</p>
+                    <p><b>Annual Distance:</b> {{ ev_annual_miles }} miles</p>
+                    <p><b>Total Annual Cost:</b> ${{ ev_total_cost }}</p>
+                    <p><b>Total CO₂ Emissions:</b> {{ ev_emissions }} metric tons</p>
+                {% else %}
+                    <p><i>EV route not possible for this lane.</i></p>
+                {% endif %}
+            </div>
         </div>
+    </div>
 
-        <div class="return-button">
-            <a href="/"><button>Return to Homepage</button></a>
-        </div>
-
+    <div class="return-button">
+        <a href="/">Return to Homepage</a>
     </div>
 </body>
 </html>
